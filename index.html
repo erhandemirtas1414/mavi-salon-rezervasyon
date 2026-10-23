@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase SDK (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    .seat { transition: all 0.15s ease-in-out; }
+    .seat:hover:not(.occupied):not(.protocol) { transform: scale(1.18); z-index: 10; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-indigo-700/60 rounded-xl">
+          <i data-lucide="armchair" class="w-6 h-6 text-amber-400"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold leading-tight">İzzet Baysal Kültür Merkezi - Mavi Salon</h1>
+          <p class="text-xs text-indigo-200">514 Kişilik Kapasite (355 Alt Kat • 159 Balkon)</p>
+        </div>
+      </div>
+
+      <!-- Sağ Butonlar -->
+      <div class="flex items-center gap-2">
+        <span id="liveStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Canlı Bağlantı
+        </span>
+
+        <button id="adminToggleBtn" onclick="toggleAdminPrompt()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 transition">
+          <i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i>
+          <span id="adminBtnText">Yönetici Girişi</span>
+        </button>
+
+        <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 shadow">
+          <i data-lucide="list-checks" class="w-4 h-4"></i>
+          <span>Yönetim & Excel</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Yönetici Bilgi Çubuğu (Admin Aktifken Görünür) -->
+  <div id="adminModeBanner" class="hidden bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i data-lucide="shield-alert" class="w-4 h-4"></i>
+      <span>YÖNETİCİ MODU AKTİF: Koltuklara tek tıkla Protokol kilidi koyabilir veya açabilirsiniz.</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="quickProtocolRowPrompt()" class="bg-slate-950 text-white px-2.5 py-1 rounded hover:bg-slate-800 text-xs">Sırayı Protokol Yap</button>
+      <button onclick="exitAdmin()" class="bg-amber-200 text-amber-950 px-2 py-1 rounded hover:bg-amber-100 text-xs">Çıkış</button>
+    </div>
+  </div>
+
+  <!-- Ana İçerik -->
+  <main class="max-w-7xl mx-auto p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Sol Koltuk Haritası Alanı (8 Kolon) -->
+    <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
+      
+      <!-- Kat Seçimi ve Sayacı -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+          <button id="tabAltKat" onclick="switchFloor('alt')" class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow">
+            Alt Kat (Parter • 355)
+          </button>
+          <button id="tabBalkon" onclick="switchFloor('balkon')" class="px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900">
+            Balkon Katı (159)
+          </button>
+        </div>
+
+        <div class="text-xs text-slate-500 flex items-center gap-4">
+          <span id="floorFreeCount" class="font-bold text-emerald-600 text-sm">355 Boş</span>
+          <span id="selectedCountBadge" class="hidden font-bold text-indigo-600">0 Koltuk Seçildi (Maks 4)</span>
+        </div>
+      </div>
+
+      <!-- Sahne Görseli -->
+      <div class="w-full max-w-2xl mb-8 flex flex-col items-center">
+        <div class="w-4/5 h-9 bg-gradient-to-b from-indigo-950 to-indigo-800 rounded-t-3xl shadow-md flex items-center justify-center text-white text-xs tracking-widest font-extrabold uppercase border-b-4 border-amber-400">
+          SAHNE
+        </div>
+        <div class="w-full text-center text-[10px] text-slate-400 mt-1">Ön Sıralar (Sahne Önü)</div>
+      </div>
+
+      <!-- Koltuk Izgarası -->
+      <div class="w-full overflow-x-auto pb-4 flex justify-center">
+        <div id="seatContainer" class="flex flex-col gap-2 min-w-max px-2">
+          <!-- Koltuklar JS ile oluşturulacak -->
+        </div>
+      </div>
+
+      <!-- Lejant -->
+      <div class="w-full mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-600">
+        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-emerald-500"></div> Boş</div>
+        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-indigo-600"></div> Seçiminiz</div>
+        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-rose-500"></div> Dolu</div>
+        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-amber-400"></div> Protokol (Ayrılmış)</div>
+      </div>
+    </div>
+
+    <!-- Sağ Form Alanı (4 Kolon) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 sticky top-20">
+        <h2 class="text-base font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
+          <span>Rezervasyon Detayları</span>
+          <span id="seatPill" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-bold">0 / 4 Koltuk</span>
+        </h2>
+
+        <div id="noSelectionMsg" class="py-10 text-center text-slate-400 text-sm">
+          <i data-lucide="hand-metal" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+          Salondan en fazla 4 koltuk seçiniz.
+        </div>
+
+        <form id="reservationForm" onsubmit="handleFormSubmit(event)" class="hidden space-y-4 mt-4">
+          <div id="guestInputsContainer" class="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+            <!-- Dinamik form girişleri -->
+          </div>
+
+          <div class="pt-3 border-t border-slate-100">
+            <button type="submit" id="submitBtn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>Rezervasyonu Tamamla</span>
+            </button>
+            <p class="text-[11px] text-slate-400 text-center mt-2">Her telefon ve e-posta sadece 1 kez rezervasyon alabilir.</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Yönetici & Excel Modalı -->
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="font-bold text-base">Kayıtlı Rezervasyonlar & Protokol Paneli</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="font-bold text-slate-700">Toplam Kayıt:</span> <span id="adminTotalRecords" class="bg-white px-2 py-0.5 rounded border">0</span>
+          <span class="font-bold text-slate-700 ml-3">Dolu Koltuk:</span> <span id="adminTotalOccupied" class="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded border border-rose-200">0</span>
+          <span class="font-bold text-slate-700 ml-3">Protokol:</span> <span id="adminTotalProtocol" class="bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-200">0</span>
+        </div>
+        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow">
+          <i data-lucide="sheet" class="w-4 h-4"></i>
+          <span>Excel / CSV İndir</span>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-100 text-slate-800 font-bold sticky top-0">
+            <tr>
+              <th class="p-2.5">PNR</th>
+              <th class="p-2.5">1. Kişi (İletişim)</th>
+              <th class="p-2.5">Telefon</th>
+              <th class="p-2.5">E-posta</th>
+              <th class="p-2.5">Koltuklar</th>
+              <th class="p-2.5">Misafirler</th>
+              <th class="p-2.5 text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody" class="divide-y divide-slate-100">
+            <!-- Dinamik doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. FIREBASE BAĞLANTISI (Buraya Firebase bilgilerinizi yapıştırın) ---
+    const firebaseConfig = {
+      apiKey: "BURAYA_FIREBASE_API_KEY",
+      authDomain: "BURAYA_PROJECT.firebaseapp.com",
+      databaseURL: "https://BURAYA_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "BURAYA_PROJECT_ID",
+      storageBucket: "BURAYA_PROJECT.appspot.com",
+      messagingSenderId: "BURAYA_SENDER_ID",
+      appId: "BURAYA_APP_ID"
+    };
+
+    // Firebase'i Başlat
+    let db = null;
+    let isFirebaseReady = false;
+    try {
+      if (firebaseConfig.apiKey !== "BURAYA_FIREBASE_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        isFirebaseReady = true;
+      }
+    } catch(e) {
+      console.warn("Firebase başlatılamadı, demo modunda localStorage kullanılacak.", e);
+    }
+
+    // --- 2. SALON PLANI (514 Koltuk) ---
+    // Alt Kat: A-N (14 Sıra) Toplam: 355 koltuk
+    const altKatConfig = [
+      { row: 'A', count: 23 }, { row: 'B', count: 23 }, { row: 'C', count: 25 },
+      { row: 'D', count: 25 }, { row: 'E', count: 25 }, { row: 'F', count: 26 },
+      { row: 'G', count: 26 }, { row: 'H', count: 26 }, { row: 'I', count: 26 },
+      { row: 'J', count: 26 }, { row: 'K', count: 26 }, { row: 'L', count: 26 },
+      { row: 'M', count: 26 }, { row: 'N', count: 26 }
+    ];
+    // Balkon: BK1 - BK6 (6 Sıra) Toplam: 159 koltuk
+    const balkonConfig = [
+      { row: 'BK1', count: 25 }, { row: 'BK2', count: 26 }, { row: 'BK3', count: 27 },
+      { row: 'BK4', count: 27 }, { row: 'BK5', count: 27 }, { row: 'BK6', count: 27 }
+    ];
+
+    // Durum Değişkenleri
+    let currentFloor = 'alt'; // 'alt' veya 'balkon'
+    let selectedSeats = [];   // Anlık seçilenler [max 4]
+    let reservations = {};    // { pnr: { name, phone, email, seats:[], guests:[] } }
+    let protocols = {};       // { "ALT-A-1": true, "ALT-A-2": true }
+    let isAdmin = false;
+    const ADMIN_PASSWORDS = ["baibu2026", "admin14", "mavisalon"];
+
+    // Sayfa Yüklendiğinde
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkUrlAdminParam();
+      listenToFirebaseData();
+      renderSeats();
+    });
+
+    function checkUrlAdminParam() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === 'true') {
+        promptAdminLogin();
+      }
+    }
+
+    // --- 3. FIREBASE GERÇEK ZAMANLI VERİ DİNLEME ---
+    function listenToFirebaseData() {
+      if (isFirebaseReady && db) {
+        db.ref('reservations').on('value', snapshot => {
+          reservations = snapshot.val() || {};
+          updateUIState();
+        });
+        db.ref('protocols').on('value', snapshot => {
+          protocols = snapshot.val() || {};
+          updateUIState();
+        });
+      } else {
+        // Yedek LocalStorage Modu
+        const savedRes = localStorage.getItem('baibu_mavi_res');
+        const savedProto = localStorage.getItem('baibu_mavi_proto');
+        if (savedRes) reservations = JSON.parse(savedRes);
+        if (savedProto) protocols = JSON.parse(savedProto);
+        document.getElementById('liveStatusBadge').innerHTML = `Yerel Mod (Firebase Bekleniyor)`;
+        document.getElementById('liveStatusBadge').className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40";
+        updateUIState();
+      }
+    }
+
+    function saveReservationToDB(pnr, data) {
+      if (isFirebaseReady && db) {
+        return db.ref('reservations/' + pnr).set(data);
+      } else {
+        reservations[pnr] = data;
+        localStorage.setItem('baibu_mavi_res', JSON.stringify(reservations));
+        updateUIState();
+        return Promise.resolve();
+      }
+    }
+
+    function toggleProtocolInDB(seatId) {
+      const newState = !protocols[seatId];
+      if (isFirebaseReady && db) {
+        if (newState) {
+          db.ref('protocols/' + seatId).set(true);
+        } else {
+          db.ref('protocols/' + seatId).remove();
+        }
+      } else {
+        if (newState) protocols[seatId] = true; else delete protocols[seatId];
+        localStorage.setItem('baibu_mavi_proto', JSON.stringify(protocols));
+        updateUIState();
+      }
+    }
+
+    // --- 4. SALON VE KOLTUK ÇİZİMİ ---
+    function renderSeats() {
+      const container = document.getElementById('seatContainer');
+      container.innerHTML = '';
+      const cfg = currentFloor === 'alt' ? altKatConfig : balkonConfig;
+
+      cfg.forEach(rowInfo => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'flex items-center gap-1.5 justify-center';
+
+        // Sıra Başlığı
+        const labelL = document.createElement('span');
+        labelL.className = 'w-8 text-right text-xs font-bold text-slate-400 select-none';
+        labelL.innerText = rowInfo.row;
+        rowDiv.appendChild(labelL);
+
+        // Koltuklar
+        const midPoint = Math.ceil(rowInfo.count / 2);
+        for (let i = 1; i <= rowInfo.count; i++) {
+          if (i === midPoint + 1) {
+            const aisle = document.createElement('div');
+            aisle.className = 'w-4 sm:w-6'; // Orta koridor
+            rowDiv.appendChild(aisle);
+          }
+
+          const seatId = `${currentFloor.toUpperCase()}-${rowInfo.row}-${i}`;
+          const seatBtn = document.createElement('button');
+          seatBtn.id = `seat-${seatId}`;
+          seatBtn.dataset.seatId = seatId;
+          seatBtn.className = 'seat w-6 h-6 sm:w-7 sm:h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border select-none';
+          seatBtn.innerText = i;
+          seatBtn.onclick = () => handleSeatClick(seatId);
+
+          rowDiv.appendChild(seatBtn);
+        }
+
+        const labelR = document.createElement('span');
+        labelR.className = 'w-8 text-left text-xs font-bold text-slate-400 select-none';
+        labelR.innerText = rowInfo.row;
+        rowDiv.appendChild(labelR);
+
+        container.appendChild(rowDiv);
+      });
+
+      updateUIState();
+    }
+
+    function updateUIState() {
+      // Bütün koltukların durumunu güncelle
+      const occupiedMap = {};
+      Object.values(reservations).forEach(r => {
+        if (r.seats) r.seats.forEach(s => occupiedMap[s] = r);
+      });
+
+      let freeCount = 0;
+      const currentPrefix = currentFloor.toUpperCase();
+
+      document.querySelectorAll('.seat').forEach(btn => {
+        const sId = btn.dataset.seatId;
+        btn.classList.remove('bg-emerald-500', 'bg-rose-500', 'bg-amber-400', 'bg-indigo-600', 'text-white', 'text-slate-900', 'border-transparent', 'cursor-not-allowed');
+
+        if (selectedSeats.includes(sId)) {
+          // Seçili
+          btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800');
+        } else if (protocols[sId]) {
+          // Protokol
+          btn.classList.add('bg-amber-400', 'text-slate-900', 'border-amber-500');
+          if (!isAdmin) btn.classList.add('cursor-not-allowed');
+        } else if (occupiedMap[sId]) {
+          // Dolu
+          btn.classList.add('bg-rose-500', 'text-white', 'border-rose-600', 'cursor-not-allowed');
+        } else {
+          // Boş
+          btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+          if (sId.startsWith(currentPrefix)) freeCount++;
+        }
+      });
+
+      document.getElementById('floorFreeCount').innerText = `${freeCount} Boş Koltuk`;
+      renderFormInputs();
+    }
+
+    // --- 5. KOLTUK SEÇİM MANTIĞI & PROTOKOL ---
+    function handleSeatClick(seatId) {
+      if (isAdmin) {
+        // Yönetici koltuğa tıklarsa protokol aç/kapat
+        toggleProtocolInDB(seatId);
+        return;
+      }
+
+      // Dolu veya Protokol ise normal kullanıcı seçemez
+      if (protocols[seatId]) {
+        alert("Bu koltuk Rektörlük / Protokol için ayrılmıştır.");
+        return;
+      }
+      const isOccupied = Object.values(reservations).some(r => r.seats && r.seats.includes(seatId));
+      if (isOccupied) {
+        alert("Bu koltuk daha önce başka bir misafir tarafından ayrılmıştır.");
+        return;
+      }
+
+      // Seçim / Çıkarma
+      if (selectedSeats.includes(seatId)) {
+        selectedSeats = selectedSeats.filter(s => s !== seatId);
+      } else {
+        if (selectedSeats.length >= 4) {
+          alert("Kural Gereği: Tek seferde en fazla 4 koltuk seçebilirsiniz!");
+          return;
+        }
+        selectedSeats.push(seatId);
+      }
+      updateUIState();
+    }
+
+    function switchFloor(floor) {
+      currentFloor = floor;
+      document.getElementById('tabAltKat').className = floor === 'alt' 
+        ? 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
+      document.getElementById('tabBalkon').className = floor === 'balkon' 
+        ? 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
+      renderSeats();
+    }
+
+    // --- 6. DİNAMİK FORM (1. Kişi Tam, 2-4. Kişi Yalnızca Ad-Soyad) ---
+    function renderFormInputs() {
+      const form = document.getElementById('reservationForm');
+      const noMsg = document.getElementById('noSelectionMsg');
+      const container = document.getElementById('guestInputsContainer');
+      const pill = document.getElementById('seatPill');
+
+      pill.innerText = `${selectedSeats.length} / 4 Koltuk`;
+
+      if (selectedSeats.length === 0) {
+        form.classList.add('hidden');
+        noMsg.classList.remove('hidden');
+        return;
+      }
+
+      form.classList.remove('hidden');
+      noMsg.classList.add('hidden');
+      container.innerHTML = '';
+
+      selectedSeats.forEach((seat, idx) => {
+        const isPrimary = idx === 0;
+        const box = document.createElement('div');
+        box.className = `p-3 rounded-xl border ${isPrimary ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50 border-slate-200'}`;
+
+        let html = `
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold ${isPrimary ? 'text-indigo-900' : 'text-slate-700'}">
+              ${idx + 1}. Koltuk: <span class="font-extrabold text-indigo-600">${seat}</span>
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded font-semibold ${isPrimary ? 'bg-indigo-200 text-indigo-900' : 'bg-slate-200 text-slate-600'}">
+              ${isPrimary ? 'Asıl Kayıt Sahibi' : 'Misafir'}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <div>
+              <label class="text-[10px] text-slate-500 font-bold">Ad *</label>
+              <input type="text" name="name_${idx}" required placeholder="Adı" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-500 font-bold">Soyad *</label>
+              <input type="text" name="surname_${idx}" required placeholder="Soyadı" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+        `;
+
+        if (isPrimary) {
+          html += `
+            <div class="space-y-2 pt-1 border-t border-indigo-100">
+              <div>
+                <label class="text-[10px] text-slate-500 font-bold">Cep Telefonu *</label>
+                <input type="tel" name="primary_phone" required placeholder="05XXXXXXXXX" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-500 font-bold">E-Posta Adresi *</label>
+                <input type="email" name="primary_email" required placeholder="ornek@posta.com" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+          `;
+        }
+        box.innerHTML = html;
+        container.appendChild(box);
+      });
+      lucide.createIcons();
+    }
+
+    // --- 7. REZERVASYON GÖNDERME & MÜKERRER KONTROLÜ ---
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      if (selectedSeats.length === 0) return;
+
+      const fd = new FormData(e.target);
+      const phone = fd.get('primary_phone').trim().replace(/\s+/g, '');
+      const email = fd.get('primary_email').trim().toLowerCase();
+
+      // Mükerrer Kontrolü (Aynı telefon veya e-posta var mı?)
+      const isDuplicate = Object.values(reservations).some(r => {
+        return (r.phone && r.phone.replace(/\s+/g, '') === phone) || 
+               (r.email && r.email.toLowerCase() === email);
+      });
+
+      if (isDuplicate) {
+        alert("DİKKAT: Bu telefon numarası veya e-posta adresi ile zaten daha önce bir rezervasyon yapılmıştır. Kural gereği aynı kişi 2. kez rezervasyon yapamaz!");
+        return;
+      }
+
+      const pnr = 'BAIBU-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      const primaryGuest = {
+        name: fd.get('name_0').trim(),
+        surname: fd.get('surname_0').trim()
+      };
+
+      const guests = [];
+      for (let i = 0; i < selectedSeats.length; i++) {
+        guests.push({
+          seat: selectedSeats[i],
+          name: fd.get(`name_${i}`).trim(),
+          surname: fd.get(`surname_${i}`).trim()
+        });
+      }
+
+      const reservationData = {
+        pnr: pnr,
+        primaryName: `${primaryGuest.name} ${primaryGuest.surname}`,
+        phone: phone,
+        email: email,
+        seats: [...selectedSeats],
+        guests: guests,
+        createdAt: new Date().toLocaleString('tr-TR')
+      };
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = "Kaydediliyor...";
+
+      try {
+        await saveReservationToDB(pnr, reservationData);
+        alert(`Tebrikler! Rezervasyonunuz Onaylandı.\nPNR Kodunuz: ${pnr}\nSeçtiğiniz Koltuklar: ${selectedSeats.join(', ')}`);
+        selectedSeats = [];
+        e.target.reset();
+        updateUIState();
+      } catch (err) {
+        alert("Rezervasyon kaydedilirken bir hata oluştu: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> <span>Rezervasyonu Tamamla</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    // --- 8. YÖNETİCİ & PROTOKOL FONKSİYONLARI ---
+    function toggleAdminPrompt() {
+      if (isAdmin) {
+        exitAdmin();
+      } else {
+        promptAdminLogin();
+      }
+    }
+
+    function promptAdminLogin() {
+      const pass = prompt("Yönetici Şifrenizi Giriniz:");
+      if (ADMIN_PASSWORDS.includes(pass)) {
+        isAdmin = true;
+        document.getElementById('adminModeBanner').classList.remove('hidden');
+        document.getElementById('adminListBtn').classList.remove('hidden');
+        document.getElementById('adminBtnText').innerText = "Yöneticiden Çık";
+        alert("Yönetici girişi başarılı! Koltuklara tıklayarak Protokol kilidi ekleyip kaldırabilirsiniz.");
+        updateUIState();
+      } else if (pass !== null) {
+        alert("Hatalı şifre!");
+      }
+    }
+
+    function exitAdmin() {
+      isAdmin = false;
+      document.getElementById('adminModeBanner').classList.add('hidden');
+      document.getElementById('adminListBtn').classList.add('hidden');
+      document.getElementById('adminBtnText').innerText = "Yönetici Girişi";
+      updateUIState();
+    }
+
+    function quickProtocolRowPrompt() {
+      const rowName = prompt("Hangi sırayı tamamen protokol yapmak istiyorsunuz? (Örn: A veya BK1)").trim().toUpperCase();
+      if (!rowName) return;
+
+      const prefix = currentFloor.toUpperCase();
+      let count = 0;
+      document.querySelectorAll('.seat').forEach(btn => {
+        const sId = btn.dataset.seatId;
+        if (sId.startsWith(`${prefix}-${rowName}-`)) {
+          protocols[sId] = true;
+          count++;
+          if (isFirebaseReady && db) db.ref('protocols/' + sId).set(true);
+        }
+      });
+      if (!isFirebaseReady) localStorage.setItem('baibu_mavi_proto', JSON.stringify(protocols));
+      alert(`${count} adet koltuk Protokole alındı.`);
+      updateUIState();
+    }
+
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.remove('hidden');
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = '';
+
+      let totalOcc = 0;
+      const resList = Object.values(reservations);
+
+      resList.forEach(r => {
+        totalOcc += r.seats ? r.seats.length : 0;
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+
+        const misafirIsimleri = (r.guests || []).map(g => `${g.name} ${g.surname} (${g.seat})`).join('<br>');
+
+        tr.innerHTML = `
+          <td class="p-2.5 font-mono font-bold text-indigo-700">${r.pnr}</td>
+          <td class="p-2.5 font-bold">${r.primaryName}</td>
+          <td class="p-2.5">${r.phone}</td>
+          <td class="p-2.5 text-slate-500">${r.email}</td>
+          <td class="p-2.5 font-bold text-slate-800">${(r.seats || []).join(', ')}</td>
+          <td class="p-2.5 text-[11px] text-slate-600 leading-relaxed">${misafirIsimleri}</td>
+          <td class="p-2.5 text-right">
+            <button onclick="cancelReservation('${r.pnr}')" class="text-rose-600 hover:text-rose-800 text-[11px] font-bold p-1">İptal Et</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('adminTotalRecords').innerText = resList.length;
+      document.getElementById('adminTotalOccupied').innerText = totalOcc;
+      document.getElementById('adminTotalProtocol').innerText = Object.keys(protocols).length;
+      lucide.createIcons();
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function cancelReservation(pnr) {
+      if (confirm(`${pnr} numaralı rezervasyonu iptal etmek istediğinize emin misiniz?`)) {
+        if (isFirebaseReady && db) {
+          db.ref('reservations/' + pnr).remove();
+        } else {
+          delete reservations[pnr];
+          localStorage.setItem('baibu_mavi_res', JSON.stringify(reservations));
+          updateUIState();
+        }
+        openAdminModal();
+      }
+    }
+
+    // --- 9. EXCEL / CSV DIŞA AKTARMA ---
+    function exportToCSV() {
+      let csv = "\uFEFFPNR;Asıl Kişi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Kayıt Tarihi\n";
+      Object.values(reservations).forEach(r => {
+        const guestsText = (r.guests || []).map(g => `${g.name} ${g.surname} [${g.seat}]`).join(' - ');
+        csv += `"${r.pnr}";"${r.primaryName}";"${r.phone}";"${r.email}";"${(r.seats || []).join(',')}";"${guestsText}";"${r.createdAt}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `BAIBU_Mavi_Salon_Katilimci_Listesi_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
