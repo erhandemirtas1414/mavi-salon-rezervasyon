@@ -11,41 +11,49 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    .seat { transition: all 0.15s ease-in-out; }
-    .seat:hover:not(.occupied):not(.protocol) { transform: scale(1.18); z-index: 10; }
-    /* Scrollbar */
+    .seat { 
+      transition: transform 0.1s ease, background-color 0.15s ease;
+      font-variant-numeric: tabular-nums;
+    }
+    .seat:hover:not(.occupied):not(.protocol) { 
+      transform: scale(1.22); 
+      z-index: 20; 
+    }
+    /* İnce şık scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
   <!-- Header -->
-  <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+  <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center space-x-3">
-        <div class="p-2 bg-indigo-700/60 rounded-xl">
-          <i data-lucide="armchair" class="w-6 h-6 text-amber-400"></i>
+        <div class="p-2 bg-indigo-800/80 rounded-xl border border-indigo-700">
+          <i data-lucide="armchair" class="w-5 h-5 text-amber-400"></i>
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-bold leading-tight">İzzet Baysal Kültür Merkezi - Mavi Salon</h1>
-          <p class="text-xs text-indigo-200">514 Kişilik Kapasite (355 Alt Kat • 159 Balkon)</p>
+          <h1 class="text-sm sm:text-base font-bold leading-tight tracking-wide">İzzet Baysal Kültür Merkezi - Mavi Salon</h1>
+          <p class="text-[11px] text-indigo-200">514 Kişilik Kapasite (355 Alt Kat • 159 Balkon)</p>
         </div>
       </div>
 
       <!-- Sağ Butonlar -->
       <div class="flex items-center gap-2">
-        <span id="liveStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Canlı Bağlantı
+        <span id="liveStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Canlı Sistem
         </span>
 
-        <button id="adminToggleBtn" onclick="toggleAdminPrompt()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 transition">
-          <i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i>
+        <button id="adminToggleBtn" onclick="toggleAdminPrompt()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 transition">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-400"></i>
           <span id="adminBtnText">Yönetici Girişi</span>
         </button>
 
-        <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 shadow">
-          <i data-lucide="list-checks" class="w-4 h-4"></i>
+        <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 shadow">
+          <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
           <span>Yönetim & Excel</span>
         </button>
       </div>
@@ -53,88 +61,98 @@
   </header>
 
   <!-- Yönetici Bilgi Çubuğu (Admin Aktifken Görünür) -->
-  <div id="adminModeBanner" class="hidden bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md flex items-center justify-between">
+  <div id="adminModeBanner" class="hidden bg-amber-400 text-slate-950 px-4 py-2 text-xs font-bold shadow-inner flex flex-wrap items-center justify-between gap-2 border-b border-amber-500">
     <div class="flex items-center gap-2">
       <i data-lucide="shield-alert" class="w-4 h-4"></i>
-      <span>YÖNETİCİ MODU AKTİF: Koltuklara tek tıkla Protokol kilidi koyabilir veya açabilirsiniz.</span>
+      <span>YÖNETİCİ MODU: İstediğiniz koltuğa tıklayarak tek tek veya sırayla PROTOKOL kilidi koyabilirsiniz.</span>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="quickProtocolRowPrompt()" class="bg-slate-950 text-white px-2.5 py-1 rounded hover:bg-slate-800 text-xs">Sırayı Protokol Yap</button>
-      <button onclick="exitAdmin()" class="bg-amber-200 text-amber-950 px-2 py-1 rounded hover:bg-amber-100 text-xs">Çıkış</button>
+      <button onclick="quickProtocolRowPrompt()" class="bg-slate-900 text-white px-2.5 py-1 rounded-md hover:bg-slate-800 text-xs shadow-sm">Sırayı Protokol Yap</button>
+      <button onclick="exitAdmin()" class="bg-amber-200 text-amber-950 px-2.5 py-1 rounded-md hover:bg-amber-100 text-xs">Çıkış Yap</button>
     </div>
   </div>
 
   <!-- Ana İçerik -->
-  <main class="max-w-7xl mx-auto p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <main class="max-w-7xl mx-auto p-3 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
     
     <!-- Sol Koltuk Haritası Alanı (8 Kolon) -->
-    <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
+    <div class="lg:col-span-8 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
       
-      <!-- Kat Seçimi ve Sayacı -->
-      <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-4">
+      <!-- Kat Seçimi, Zoom ve Sayaç -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-2.5 mb-4 pb-3 border-b border-slate-100">
         <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-          <button id="tabAltKat" onclick="switchFloor('alt')" class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow">
-            Alt Kat (Parter • 355)
+          <button id="tabAltKat" onclick="switchFloor('alt')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow">
+            Alt Kat (355)
           </button>
-          <button id="tabBalkon" onclick="switchFloor('balkon')" class="px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900">
+          <button id="tabBalkon" onclick="switchFloor('balkon')" class="px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900">
             Balkon Katı (159)
           </button>
         </div>
 
-        <div class="text-xs text-slate-500 flex items-center gap-4">
-          <span id="floorFreeCount" class="font-bold text-emerald-600 text-sm">355 Boş</span>
-          <span id="selectedCountBadge" class="hidden font-bold text-indigo-600">0 Koltuk Seçildi (Maks 4)</span>
+        <!-- Zoom Kontrolleri -->
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-slate-600">
+          <span class="text-[11px] font-bold px-1.5 text-slate-400">Görünüm:</span>
+          <button onclick="changeZoom(-0.1)" title="Uzaklaştır" class="p-1 hover:bg-white rounded text-xs font-bold w-6 h-6 flex items-center justify-center border border-transparent hover:border-slate-300">-</button>
+          <span id="zoomLabel" class="text-[11px] font-bold px-1 min-w-[40px] text-center">100%</span>
+          <button onclick="changeZoom(0.1)" title="Yakınlaştır" class="p-1 hover:bg-white rounded text-xs font-bold w-6 h-6 flex items-center justify-center border border-transparent hover:border-slate-300">+</button>
+          <button onclick="resetZoom()" title="Sıfırla" class="text-[10px] px-1.5 py-0.5 hover:bg-white rounded border border-transparent hover:border-slate-300">Sığdır</button>
+        </div>
+
+        <div class="text-xs text-slate-500 flex items-center gap-3">
+          <span id="floorFreeCount" class="font-extrabold text-emerald-600 text-sm">355 Boş</span>
         </div>
       </div>
 
       <!-- Sahne Görseli -->
-      <div class="w-full max-w-2xl mb-8 flex flex-col items-center">
-        <div class="w-4/5 h-9 bg-gradient-to-b from-indigo-950 to-indigo-800 rounded-t-3xl shadow-md flex items-center justify-center text-white text-xs tracking-widest font-extrabold uppercase border-b-4 border-amber-400">
+      <div class="w-full max-w-xl mb-4 flex flex-col items-center">
+        <div class="w-3/4 h-8 bg-gradient-to-b from-indigo-950 to-indigo-800 rounded-t-2xl shadow-sm flex items-center justify-center text-white text-[11px] tracking-widest font-extrabold uppercase border-b-2 border-amber-400">
           SAHNE
         </div>
-        <div class="w-full text-center text-[10px] text-slate-400 mt-1">Ön Sıralar (Sahne Önü)</div>
+        <div class="w-full text-center text-[10px] text-slate-400 mt-0.5">Ön Sıralar</div>
       </div>
 
-      <!-- Koltuk Izgarası -->
-      <div class="w-full overflow-x-auto pb-4 flex justify-center">
-        <div id="seatContainer" class="flex flex-col gap-2 min-w-max px-2">
-          <!-- Koltuklar JS ile oluşturulacak -->
+      <!-- Koltuk Izgarası Alanı (Dış Kaydırıcı & İç Zoom Kapsayıcısı) -->
+      <div class="w-full overflow-x-auto pb-4 pt-1 flex justify-center">
+        <div id="zoomWrapper" class="transition-transform duration-150 origin-top flex justify-center px-4">
+          <div id="seatContainer" class="flex flex-col gap-1.5 min-w-max">
+            <!-- Koltuklar JS ile oluşturulacak -->
+          </div>
         </div>
       </div>
 
       <!-- Lejant -->
-      <div class="w-full mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-600">
-        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-emerald-500"></div> Boş</div>
-        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-indigo-600"></div> Seçiminiz</div>
-        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-rose-500"></div> Dolu</div>
-        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded bg-amber-400"></div> Protokol (Ayrılmış)</div>
+      <div class="w-full mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] text-slate-600">
+        <div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded bg-emerald-500"></div> Boş</div>
+        <div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded bg-indigo-600"></div> Seçiminiz</div>
+        <div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded bg-rose-500"></div> Dolu</div>
+        <div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded bg-amber-400"></div> Protokol</div>
       </div>
     </div>
 
     <!-- Sağ Form Alanı (4 Kolon) -->
     <div class="lg:col-span-4 flex flex-col gap-4">
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 sticky top-20">
-        <h2 class="text-base font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 sticky top-20">
+        <h2 class="text-sm sm:text-base font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
           <span>Rezervasyon Detayları</span>
-          <span id="seatPill" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-bold">0 / 4 Koltuk</span>
+          <span id="seatPill" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0 / 4 Koltuk</span>
         </h2>
 
-        <div id="noSelectionMsg" class="py-10 text-center text-slate-400 text-sm">
-          <i data-lucide="hand-metal" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+        <div id="noSelectionMsg" class="py-12 text-center text-slate-400 text-xs sm:text-sm">
+          <i data-lucide="hand-metal" class="w-7 h-7 mx-auto mb-2 text-slate-300"></i>
           Salondan en fazla 4 koltuk seçiniz.
         </div>
 
-        <form id="reservationForm" onsubmit="handleFormSubmit(event)" class="hidden space-y-4 mt-4">
-          <div id="guestInputsContainer" class="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+        <form id="reservationForm" onsubmit="handleFormSubmit(event)" class="hidden space-y-3 mt-3">
+          <div id="guestInputsContainer" class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
             <!-- Dinamik form girişleri -->
           </div>
 
           <div class="pt-3 border-t border-slate-100">
-            <button type="submit" id="submitBtn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+            <button type="submit" id="submitBtn" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs sm:text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
               <i data-lucide="check-circle" class="w-4 h-4"></i>
               <span>Rezervasyonu Tamamla</span>
             </button>
-            <p class="text-[11px] text-slate-400 text-center mt-2">Her telefon ve e-posta sadece 1 kez rezervasyon alabilir.</p>
+            <p class="text-[10px] text-slate-400 text-center mt-2">Her telefon ve e-posta yalnızca 1 kez rezervasyon yapabilir.</p>
           </div>
         </form>
       </div>
@@ -147,48 +165,46 @@
       <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
         <div class="flex items-center gap-2">
           <i data-lucide="database" class="w-5 h-5 text-amber-400"></i>
-          <h3 class="font-bold text-base">Kayıtlı Rezervasyonlar & Protokol Paneli</h3>
+          <h3 class="font-bold text-sm sm:text-base">Kayıtlı Rezervasyonlar & Protokol Paneli</h3>
         </div>
         <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-3 justify-between items-center">
+      <div class="p-3 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2.5 justify-between items-center">
         <div class="flex items-center gap-2 text-xs">
           <span class="font-bold text-slate-700">Toplam Kayıt:</span> <span id="adminTotalRecords" class="bg-white px-2 py-0.5 rounded border">0</span>
-          <span class="font-bold text-slate-700 ml-3">Dolu Koltuk:</span> <span id="adminTotalOccupied" class="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded border border-rose-200">0</span>
-          <span class="font-bold text-slate-700 ml-3">Protokol:</span> <span id="adminTotalProtocol" class="bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-200">0</span>
+          <span class="font-bold text-slate-700 ml-2">Dolu:</span> <span id="adminTotalOccupied" class="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded border border-rose-200">0</span>
+          <span class="font-bold text-slate-700 ml-2">Protokol:</span> <span id="adminTotalProtocol" class="bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-200">0</span>
         </div>
-        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow">
-          <i data-lucide="sheet" class="w-4 h-4"></i>
+        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow">
+          <i data-lucide="sheet" class="w-3.5 h-3.5"></i>
           <span>Excel / CSV İndir</span>
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex-1 overflow-y-auto p-3 sm:p-4">
         <table class="w-full text-left text-xs text-slate-600">
           <thead class="bg-slate-100 text-slate-800 font-bold sticky top-0">
             <tr>
-              <th class="p-2.5">PNR</th>
-              <th class="p-2.5">1. Kişi (İletişim)</th>
-              <th class="p-2.5">Telefon</th>
-              <th class="p-2.5">E-posta</th>
-              <th class="p-2.5">Koltuklar</th>
-              <th class="p-2.5">Misafirler</th>
-              <th class="p-2.5 text-right">İşlem</th>
+              <th class="p-2">PNR</th>
+              <th class="p-2">1. Kişi</th>
+              <th class="p-2">Telefon</th>
+              <th class="p-2">E-posta</th>
+              <th class="p-2">Koltuklar</th>
+              <th class="p-2">Misafirler</th>
+              <th class="p-2 text-right">İşlem</th>
             </tr>
           </thead>
-          <tbody id="adminTableBody" class="divide-y divide-slate-100">
-            <!-- Dinamik doldurulacak -->
-          </tbody>
+          <tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
     </div>
   </div>
 
   <script>
-    // --- 1. FIREBASE BAĞLANTISI (Buraya Firebase bilgilerinizi yapıştırın) ---
+    // --- 1. FIREBASE BAĞLANTISI ---
     const firebaseConfig = {
       apiKey: "BURAYA_FIREBASE_API_KEY",
       authDomain: "BURAYA_PROJECT.firebaseapp.com",
@@ -199,7 +215,6 @@
       appId: "BURAYA_APP_ID"
     };
 
-    // Firebase'i Başlat
     let db = null;
     let isFirebaseReady = false;
     try {
@@ -209,11 +224,10 @@
         isFirebaseReady = true;
       }
     } catch(e) {
-      console.warn("Firebase başlatılamadı, demo modunda localStorage kullanılacak.", e);
+      console.warn("Firebase hazır değil, demo modunda çalışıyor.");
     }
 
     // --- 2. SALON PLANI (514 Koltuk) ---
-    // Alt Kat: A-N (14 Sıra) Toplam: 355 koltuk
     const altKatConfig = [
       { row: 'A', count: 23 }, { row: 'B', count: 23 }, { row: 'C', count: 25 },
       { row: 'D', count: 25 }, { row: 'E', count: 25 }, { row: 'F', count: 26 },
@@ -221,26 +235,28 @@
       { row: 'J', count: 26 }, { row: 'K', count: 26 }, { row: 'L', count: 26 },
       { row: 'M', count: 26 }, { row: 'N', count: 26 }
     ];
-    // Balkon: BK1 - BK6 (6 Sıra) Toplam: 159 koltuk
     const balkonConfig = [
       { row: 'BK1', count: 25 }, { row: 'BK2', count: 26 }, { row: 'BK3', count: 27 },
       { row: 'BK4', count: 27 }, { row: 'BK5', count: 27 }, { row: 'BK6', count: 27 }
     ];
 
-    // Durum Değişkenleri
-    let currentFloor = 'alt'; // 'alt' veya 'balkon'
-    let selectedSeats = [];   // Anlık seçilenler [max 4]
-    let reservations = {};    // { pnr: { name, phone, email, seats:[], guests:[] } }
-    let protocols = {};       // { "ALT-A-1": true, "ALT-A-2": true }
+    let currentFloor = 'alt';
+    let selectedSeats = [];
+    let reservations = {};
+    let protocols = {};
     let isAdmin = false;
+    let currentZoom = 1.0;
     const ADMIN_PASSWORDS = ["baibu2026", "admin14", "mavisalon"];
 
-    // Sayfa Yüklendiğinde
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       checkUrlAdminParam();
       listenToFirebaseData();
       renderSeats();
+      // Ekrana göre otomatik sığdırma (mobilde %75 başlar)
+      if (window.innerWidth < 768) {
+        changeZoom(-0.25);
+      }
     });
 
     function checkUrlAdminParam() {
@@ -250,7 +266,25 @@
       }
     }
 
-    // --- 3. FIREBASE GERÇEK ZAMANLI VERİ DİNLEME ---
+    // Zoom Kontrolleri
+    function changeZoom(delta) {
+      currentZoom = Math.min(Math.max(0.5, currentZoom + delta), 1.4);
+      applyZoom();
+    }
+    function resetZoom() {
+      // Ekrana otomatik sığdırma hesaplaması
+      const containerW = document.getElementById('seatContainer').scrollWidth || 700;
+      const screenW = window.innerWidth - 60;
+      currentZoom = Math.min(1.0, Math.max(0.55, screenW / containerW));
+      applyZoom();
+    }
+    function applyZoom() {
+      const wrapper = document.getElementById('zoomWrapper');
+      wrapper.style.transform = `scale(${currentZoom})`;
+      document.getElementById('zoomLabel').innerText = `${Math.round(currentZoom * 100)}%`;
+    }
+
+    // Firebase Dinleme
     function listenToFirebaseData() {
       if (isFirebaseReady && db) {
         db.ref('reservations').on('value', snapshot => {
@@ -262,13 +296,12 @@
           updateUIState();
         });
       } else {
-        // Yedek LocalStorage Modu
         const savedRes = localStorage.getItem('baibu_mavi_res');
         const savedProto = localStorage.getItem('baibu_mavi_proto');
         if (savedRes) reservations = JSON.parse(savedRes);
         if (savedProto) protocols = JSON.parse(savedProto);
-        document.getElementById('liveStatusBadge').innerHTML = `Yerel Mod (Firebase Bekleniyor)`;
-        document.getElementById('liveStatusBadge').className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40";
+        document.getElementById('liveStatusBadge').innerHTML = `Yerel Mod (Demo)`;
+        document.getElementById('liveStatusBadge').className = "px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40";
         updateUIState();
       }
     }
@@ -299,7 +332,7 @@
       }
     }
 
-    // --- 4. SALON VE KOLTUK ÇİZİMİ ---
+    // --- KOLTUKLARI ÇİZME (Geliştirilmiş Düzen) ---
     function renderSeats() {
       const container = document.getElementById('seatContainer');
       container.innerHTML = '';
@@ -307,11 +340,11 @@
 
       cfg.forEach(rowInfo => {
         const rowDiv = document.createElement('div');
-        rowDiv.className = 'flex items-center gap-1.5 justify-center';
+        rowDiv.className = 'flex items-center gap-1 sm:gap-1.5 justify-center';
 
-        // Sıra Başlığı
-        const labelL = document.createElement('span');
-        labelL.className = 'w-8 text-right text-xs font-bold text-slate-400 select-none';
+        // Sol Sıra Harfi
+        const labelL = document.createElement('div');
+        labelL.className = 'w-7 text-center text-xs font-black text-indigo-900 bg-slate-200/80 rounded py-0.5 select-none shrink-0';
         labelL.innerText = rowInfo.row;
         rowDiv.appendChild(labelL);
 
@@ -319,8 +352,10 @@
         const midPoint = Math.ceil(rowInfo.count / 2);
         for (let i = 1; i <= rowInfo.count; i++) {
           if (i === midPoint + 1) {
+            // Orta Koridor
             const aisle = document.createElement('div');
-            aisle.className = 'w-4 sm:w-6'; // Orta koridor
+            aisle.className = 'w-4 sm:w-6 shrink-0 text-center text-[10px] text-slate-300 select-none';
+            aisle.innerText = '•';
             rowDiv.appendChild(aisle);
           }
 
@@ -328,15 +363,17 @@
           const seatBtn = document.createElement('button');
           seatBtn.id = `seat-${seatId}`;
           seatBtn.dataset.seatId = seatId;
-          seatBtn.className = 'seat w-6 h-6 sm:w-7 sm:h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border select-none';
+          // Koltuk boyutları: Masaüstünde w-6.5 h-6.5, Mobilde w-5.5 h-5.5
+          seatBtn.className = 'seat w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] rounded-md text-[9px] sm:text-[10px] font-bold flex items-center justify-center border select-none shrink-0 cursor-pointer shadow-xs';
           seatBtn.innerText = i;
           seatBtn.onclick = () => handleSeatClick(seatId);
 
           rowDiv.appendChild(seatBtn);
         }
 
-        const labelR = document.createElement('span');
-        labelR.className = 'w-8 text-left text-xs font-bold text-slate-400 select-none';
+        // Sağ Sıra Harfi
+        const labelR = document.createElement('div');
+        labelR.className = 'w-7 text-center text-xs font-black text-indigo-900 bg-slate-200/80 rounded py-0.5 select-none shrink-0';
         labelR.innerText = rowInfo.row;
         rowDiv.appendChild(labelR);
 
@@ -347,7 +384,6 @@
     }
 
     function updateUIState() {
-      // Bütün koltukların durumunu güncelle
       const occupiedMap = {};
       Object.values(reservations).forEach(r => {
         if (r.seats) r.seats.forEach(s => occupiedMap[s] = r);
@@ -358,20 +394,16 @@
 
       document.querySelectorAll('.seat').forEach(btn => {
         const sId = btn.dataset.seatId;
-        btn.classList.remove('bg-emerald-500', 'bg-rose-500', 'bg-amber-400', 'bg-indigo-600', 'text-white', 'text-slate-900', 'border-transparent', 'cursor-not-allowed');
+        btn.classList.remove('bg-emerald-500', 'bg-rose-500', 'bg-amber-400', 'bg-indigo-600', 'text-white', 'text-slate-900', 'border-emerald-600', 'border-rose-600', 'border-amber-500', 'border-indigo-800', 'cursor-not-allowed');
 
         if (selectedSeats.includes(sId)) {
-          // Seçili
           btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800');
         } else if (protocols[sId]) {
-          // Protokol
-          btn.classList.add('bg-amber-400', 'text-slate-900', 'border-amber-500');
+          btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-500');
           if (!isAdmin) btn.classList.add('cursor-not-allowed');
         } else if (occupiedMap[sId]) {
-          // Dolu
           btn.classList.add('bg-rose-500', 'text-white', 'border-rose-600', 'cursor-not-allowed');
         } else {
-          // Boş
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
           if (sId.startsWith(currentPrefix)) freeCount++;
         }
@@ -381,15 +413,12 @@
       renderFormInputs();
     }
 
-    // --- 5. KOLTUK SEÇİM MANTIĞI & PROTOKOL ---
     function handleSeatClick(seatId) {
       if (isAdmin) {
-        // Yönetici koltuğa tıklarsa protokol aç/kapat
         toggleProtocolInDB(seatId);
         return;
       }
 
-      // Dolu veya Protokol ise normal kullanıcı seçemez
       if (protocols[seatId]) {
         alert("Bu koltuk Rektörlük / Protokol için ayrılmıştır.");
         return;
@@ -400,7 +429,6 @@
         return;
       }
 
-      // Seçim / Çıkarma
       if (selectedSeats.includes(seatId)) {
         selectedSeats = selectedSeats.filter(s => s !== seatId);
       } else {
@@ -416,15 +444,14 @@
     function switchFloor(floor) {
       currentFloor = floor;
       document.getElementById('tabAltKat').className = floor === 'alt' 
-        ? 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
+        ? 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
       document.getElementById('tabBalkon').className = floor === 'balkon' 
-        ? 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
+        ? 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900';
       renderSeats();
     }
 
-    // --- 6. DİNAMİK FORM (1. Kişi Tam, 2-4. Kişi Yalnızca Ad-Soyad) ---
     function renderFormInputs() {
       const form = document.getElementById('reservationForm');
       const noMsg = document.getElementById('noSelectionMsg');
@@ -446,7 +473,7 @@
       selectedSeats.forEach((seat, idx) => {
         const isPrimary = idx === 0;
         const box = document.createElement('div');
-        box.className = `p-3 rounded-xl border ${isPrimary ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50 border-slate-200'}`;
+        box.className = `p-3 rounded-xl border ${isPrimary ? 'bg-indigo-50/60 border-indigo-200' : 'bg-slate-50 border-slate-200'}`;
 
         let html = `
           <div class="flex items-center justify-between mb-2">
@@ -489,7 +516,6 @@
       lucide.createIcons();
     }
 
-    // --- 7. REZERVASYON GÖNDERME & MÜKERRER KONTROLÜ ---
     async function handleFormSubmit(e) {
       e.preventDefault();
       if (selectedSeats.length === 0) return;
@@ -498,7 +524,6 @@
       const phone = fd.get('primary_phone').trim().replace(/\s+/g, '');
       const email = fd.get('primary_email').trim().toLowerCase();
 
-      // Mükerrer Kontrolü (Aynı telefon veya e-posta var mı?)
       const isDuplicate = Object.values(reservations).some(r => {
         return (r.phone && r.phone.replace(/\s+/g, '') === phone) || 
                (r.email && r.email.toLowerCase() === email);
@@ -553,7 +578,6 @@
       }
     }
 
-    // --- 8. YÖNETİCİ & PROTOKOL FONKSİYONLARI ---
     function toggleAdminPrompt() {
       if (isAdmin) {
         exitAdmin();
@@ -569,7 +593,7 @@
         document.getElementById('adminModeBanner').classList.remove('hidden');
         document.getElementById('adminListBtn').classList.remove('hidden');
         document.getElementById('adminBtnText').innerText = "Yöneticiden Çık";
-        alert("Yönetici girişi başarılı! Koltuklara tıklayarak Protokol kilidi ekleyip kaldırabilirsiniz.");
+        alert("Yönetici girişi başarılı! Koltuklara tıklayarak Protokol kilidi koyup kaldırabilirsiniz.");
         updateUIState();
       } else if (pass !== null) {
         alert("Hatalı şifre!");
@@ -619,13 +643,13 @@
         const misafirIsimleri = (r.guests || []).map(g => `${g.name} ${g.surname} (${g.seat})`).join('<br>');
 
         tr.innerHTML = `
-          <td class="p-2.5 font-mono font-bold text-indigo-700">${r.pnr}</td>
-          <td class="p-2.5 font-bold">${r.primaryName}</td>
-          <td class="p-2.5">${r.phone}</td>
-          <td class="p-2.5 text-slate-500">${r.email}</td>
-          <td class="p-2.5 font-bold text-slate-800">${(r.seats || []).join(', ')}</td>
-          <td class="p-2.5 text-[11px] text-slate-600 leading-relaxed">${misafirIsimleri}</td>
-          <td class="p-2.5 text-right">
+          <td class="p-2 font-mono font-bold text-indigo-700">${r.pnr}</td>
+          <td class="p-2 font-bold">${r.primaryName}</td>
+          <td class="p-2">${r.phone}</td>
+          <td class="p-2 text-slate-500">${r.email}</td>
+          <td class="p-2 font-bold text-slate-800">${(r.seats || []).join(', ')}</td>
+          <td class="p-2 text-[11px] text-slate-600 leading-relaxed">${misafirIsimleri}</td>
+          <td class="p-2 text-right">
             <button onclick="cancelReservation('${r.pnr}')" class="text-rose-600 hover:text-rose-800 text-[11px] font-bold p-1">İptal Et</button>
           </td>
         `;
@@ -655,7 +679,6 @@
       }
     }
 
-    // --- 9. EXCEL / CSV DIŞA AKTARMA ---
     function exportToCSV() {
       let csv = "\uFEFFPNR;Asıl Kişi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Kayıt Tarihi\n";
       Object.values(reservations).forEach(r => {
