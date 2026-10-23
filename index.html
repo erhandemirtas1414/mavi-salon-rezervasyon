@@ -20,12 +20,12 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col pb-10 overflow-x-hidden">
 
-  <!-- Üst Bar (Header) - Normal kullanıcılara hiçbir Admin/Kayıt butonu görünmez -->
+  <!-- Üst Bar (Header) - Normal kullanıcılara Yönetici/Kayıt butonları KESİNLİKLE GÖRÜNMEZ -->
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 min-w-0">
         <!-- GİZLİ ADMİN TETİKLEYİCİSİ: Bu koltuk ikonuna 5 kez üst üste tıklayınca şifre sorar -->
-        <div id="secretLogo" onclick="handleSecretTap()" class="p-1.5 bg-indigo-800 rounded-lg shrink-0 cursor-pointer select-none">
+        <div id="secretLogo" onclick="handleSecretTap()" class="p-1.5 bg-indigo-800 rounded-lg shrink-0 cursor-pointer select-none" title="Yönetici Girişi İçin 5 Kez Tıklayın">
           <i data-lucide="armchair" class="w-5 h-5 text-amber-400"></i>
         </div>
         <div class="truncate">
@@ -35,13 +35,13 @@
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
-        <!-- Bilet Sorgulama (Kullanıcı kendi PNR koduyla bakabilir) -->
+        <!-- Bilet Sorgulama -->
         <button onclick="checkMyTicket()" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-700">
           <i data-lucide="search" class="w-3.5 h-3.5"></i>
           <span>Biletimi Sorgula</span>
         </button>
 
-        <!-- SADECE ADMİN GİRİŞİ YAPILDIĞINDA GÖRÜNEN BUTONLAR -->
+        <!-- GİZLİ BUTON: Başlangıçta gizlidir, sadece admin girişi yapılınca açılır -->
         <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
           <span>Kayıtlar (<span id="resCountBadge">0</span>)</span>
@@ -50,9 +50,9 @@
     </div>
   </header>
 
-  <!-- Yönetici Modu Uyarısı (Sadece Admin Girişinde Açılır) -->
+  <!-- Yönetici Paneli Aktif Olduğunda Çıkan Üst Bant -->
   <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-inner">
-    <span>⚙️ YÖNETİCİ PANELİ AKTİF: Boş koltuğa tıklayarak Protokol (Sarı) yapabilir, dolu (Kırmızı) koltuğa tıklayarak kimin oturduğunu görebilirsiniz.</span>
+    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak Protokol (Sarı) yapabilir, dolu (Kırmızı) koltuğa tıklayarak kimin oturduğunu görebilir/silebilirsiniz.</span>
     <div class="flex items-center gap-1.5 ml-auto">
       <button onclick="openAdminModal()" class="bg-indigo-950 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesini Aç</button>
       <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış Yap</button>
@@ -145,7 +145,7 @@
         <i data-lucide="check-check" class="w-6 h-6"></i>
       </div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">Lütfen giriş için PNR kodunuzu ekran görüntüsü alınız.</p>
+      <p class="text-xs text-slate-500 mt-0.5">Lütfen giriş için PNR kodunuzu not ediniz.</p>
       
       <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
@@ -157,7 +157,7 @@
     </div>
   </div>
 
-  <!-- YÖNETİCİ KAYIT LİSTESİ MODALI (SADECE ADMİN GÖREBİLİR) -->
+  <!-- YÖNETİCİ KAYIT LİSTESİ MODALI -->
   <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-4xl max-h-[88vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
       <div class="p-3 bg-slate-900 text-white flex justify-between items-center text-xs">
@@ -198,9 +198,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // 1. FIREBASE BAĞLANTISI
-    // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
       authDomain: "baibu-mavi-salon.firebaseapp.com",
@@ -243,7 +240,6 @@
     let isAdmin = false;
     let formDraft = {};
 
-    // Gizli logo tıklama sayacı
     let secretTapCount = 0;
     let secretTapTimer = null;
 
@@ -252,16 +248,12 @@
       loadData();
       renderGrid();
 
-      // URL'de ?yonetim veya ?admin varsa doğrudan şifre ekranını aç
       const params = new URLSearchParams(window.location.search);
       if (params.has('yonetim') || params.has('admin')) {
         setTimeout(() => promptAdminLogin(), 400);
       }
     });
 
-    // =========================================================================
-    // 2. VERİ YÜKLEME VE KAYDETME
-    // =========================================================================
     function loadData() {
       try {
         const localRes = localStorage.getItem('baibu_mavi_res_v2');
@@ -309,9 +301,6 @@
       }
     }
 
-    // =========================================================================
-    // 3. EKRAN VE KAT KONTROLLERİ
-    // =========================================================================
     function switchFloor(fl) {
       currentFloor = fl;
       document.getElementById('tabAlt').className = fl === 'alt'
@@ -340,9 +329,6 @@
       renderGrid();
     }
 
-    // =========================================================================
-    // 4. KOLTUK ÇİZİMİ VE TIKLAMA MANTIĞI
-    // =========================================================================
     function renderGrid() {
       const container = document.getElementById('seatContainer');
       container.innerHTML = '';
@@ -447,7 +433,6 @@
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
-      // YÖNETİCİ MODUNDAYKEN KOLTUĞA TIKLANIRSA:
       if (isAdmin) {
         if (occupiedMap[sId]) {
           const r = occupiedMap[sId];
@@ -468,7 +453,6 @@
         return;
       }
 
-      // NORMAL KULLANICI TIKLAMASI:
       if (occupiedMap[sId]) {
         alert("Bu koltuk dolu, lütfen yeşil renkli boş bir koltuk seçiniz.");
         return;
@@ -494,9 +478,6 @@
       refreshUI();
     }
 
-    // =========================================================================
-    // 5. FORM VE REZERVASYON KAYDI
-    // =========================================================================
     function saveCurrentFormDraft() {
       selectedSeats.forEach((seat, idx) => {
         const n = document.getElementById(`name_${idx}`);
@@ -612,7 +593,6 @@
       document.getElementById('ticketModal').classList.add('hidden');
     }
 
-    // Normal kullanıcının kendi PNR koduyla biletini sorgulaması
     function checkMyTicket() {
       const code = prompt("Lütfen PNR kodunuzu giriniz (Örn: BAIBU-XXXXX):");
       if (!code) return;
@@ -628,9 +608,6 @@
       document.getElementById('ticketModal').classList.remove('hidden');
     }
 
-    // =========================================================================
-    // 6. GİZLİ YÖNETİCİ GİRİŞİ (5 TIKLAMA VEYA ?yonetim LİNKİ)
-    // =========================================================================
     function handleSecretTap() {
       secretTapCount++;
       clearTimeout(secretTapTimer);
@@ -655,8 +632,6 @@
       const p = prompt("🔐 Yönetici Şifresini Giriniz:");
       if (!p) return;
 
-      // Şifre kaynak kodda açık görünmez (SHA-256 Hash kontrolü)
-      // Kabul edilen şifreler: baibu2026 | admin14 | mavisalon
       const validHashes = [
         "10e9c2817f67668970155246f0e498e7c580f65934817665a5e5c21a60065678",
         "f62e592131919c871950e6e72038922f107419573f33128725088f274c04e71c"
