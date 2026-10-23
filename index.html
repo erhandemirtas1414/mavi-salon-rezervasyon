@@ -7,7 +7,7 @@
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Firebase SDK (Opsiyonel: Ayarlanmazsa Otomatik LocalStorage Çalışır) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
@@ -35,7 +35,7 @@
 
       <div class="flex items-center gap-1.5 shrink-0">
         <span id="connBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-          Aktif
+          Canlı Bağlantı
         </span>
         <button onclick="toggleAdminPrompt()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-800 hover:bg-indigo-700 border border-indigo-700">
           <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -136,7 +136,7 @@
         </form>
       </div>
 
-      <!-- Son Yapılan Kayıt Özeti Kutusu (Sayfa Altında Hemen Görünmesi İçin) -->
+      <!-- Son Yapılan Kayıt Özeti Kutusu -->
       <div id="recentBox" class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-xs font-bold text-slate-700">Son Rezervasyonlar</h3>
@@ -152,7 +152,7 @@
 
   <!-- Bilet Onay Modalı -->
   <div id="ticketModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
-    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center animate-fade-in">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
       <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
         <i data-lucide="check-check" class="w-6 h-6"></i>
       </div>
@@ -207,26 +207,28 @@
 
   <script>
     // =========================================================================
-    // 1. FIREBASE AYARLARI (Kullanmıyorsanız dokunmayın, LocalStorage çalışır)
+    // 1. SİZE ÖZEL FIREBASE BAĞLANTISI (baibu-mavi-salon)
     // =========================================================================
     const firebaseConfig = {
-      apiKey: "BURAYA_FIREBASE_API_KEY",
-      authDomain: "BURAYA_PROJECT.firebaseapp.com",
-      databaseURL: "https://BURAYA_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "BURAYA_PROJECT_ID"
+      apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
+      authDomain: "baibu-mavi-salon.firebaseapp.com",
+      databaseURL: "https://baibu-mavi-salon-default-rtdb.firebaseio.com",
+      projectId: "baibu-mavi-salon",
+      storageBucket: "baibu-mavi-salon.firebasestorage.app",
+      messagingSenderId: "502256070432",
+      appId: "1:502256070432:web:fb7d95759d6b907395f145",
+      measurementId: "G-S77RDCE982"
     };
 
     let db = null;
     let isFirebaseLive = false;
 
     try {
-      if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("BURAYA") && firebaseConfig.databaseURL.startsWith("https://")) {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        isFirebaseLive = true;
-      }
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      isFirebaseLive = true;
     } catch (e) {
-      console.warn("Yerel depolama (LocalStorage) modu aktif.");
+      console.warn("Firebase başlatılamadı, yerel depolama aktif:", e);
     }
 
     // 514 Koltuklu Salon Planı
@@ -248,7 +250,7 @@
     let reservations = {};
     let protocols = {};
     let isAdmin = false;
-    let formDraft = {}; // Kullanıcı yazarken seçimi değiştirirse yazdıkları silinmesin
+    let formDraft = {};
 
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
@@ -257,10 +259,9 @@
     });
 
     // =========================================================================
-    // 2. VERİ YÜKLEME VE KAYDETME (HİBRİT & KESİNTİSİZ)
+    // 2. VERİ YÜKLEME VE KAYDETME (CANLI SENKRONİZASYON + YEREL YEDEK)
     // =========================================================================
     function loadData() {
-      // Önce her zaman LocalStorage'dan anında yükle
       try {
         const localRes = localStorage.getItem('baibu_mavi_res_v2');
         const localProto = localStorage.getItem('baibu_mavi_proto_v2');
@@ -270,34 +271,27 @@
 
       refreshUI();
 
-      // Eğer Firebase ayarlanmışsa buluttan da dinle
       if (isFirebaseLive && db) {
         db.ref('reservations').on('value', snap => {
-          if (snap.exists()) {
-            reservations = snap.val() || {};
-            localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-            refreshUI();
-          }
+          reservations = snap.val() || {};
+          localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
+          refreshUI();
         });
         db.ref('protocols').on('value', snap => {
-          if (snap.exists()) {
-            protocols = snap.val() || {};
-            localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
-            refreshUI();
-          }
+          protocols = snap.val() || {};
+          localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
+          refreshUI();
         });
       }
     }
 
     function saveReservationData(pnr, record) {
-      // 1. Anında belleğe ve LocalStorage'a kaydet (Koltuk hemen kırmızı olur)
       reservations[pnr] = record;
       localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
       refreshUI();
 
-      // 2. Eğer Firebase varsa arka planda gönder (sayfayı kilitlemeden)
       if (isFirebaseLive && db) {
-        db.ref('reservations/' + pnr).set(record).catch(err => console.warn("Firebase senkron uyarısı:", err));
+        db.ref('reservations/' + pnr).set(record).catch(err => console.warn("Firebase yazma uyarısı:", err));
       }
     }
 
@@ -349,14 +343,12 @@
     }
 
     // =========================================================================
-    // 4. KOLTUKLARI ÇİZME VE RENKLENDİRME (KIRMIZI / YEŞİL / SARI / MAVİ)
+    // 4. KOLTUKLARI ÇİZME VE RENKLENDİRME
     // =========================================================================
     function renderGrid() {
       const container = document.getElementById('seatContainer');
       container.innerHTML = '';
       const cfg = currentFloor === 'alt' ? altPlan : balkonPlan;
-
-      // Tüm salon görünümünde ve mobil sığdırma açıkken koltuklar ekrana tam oturur
       const fitToMobile = (currentWing === 'all' && mobileFitMode);
 
       cfg.forEach(row => {
@@ -365,7 +357,6 @@
           ? 'flex items-center justify-center gap-[1.5px] sm:gap-1 w-full'
           : 'flex items-center justify-center gap-1 min-w-max px-1';
 
-        // Sol Sıra Harfi
         const lblL = document.createElement('div');
         lblL.className = fitToMobile
           ? 'w-4 sm:w-6 text-center text-[8px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0'
@@ -379,7 +370,6 @@
           if (currentWing === 'left' && i > mid) continue;
           if (currentWing === 'right' && i <= mid) continue;
 
-          // Orta Koridor Boşluğu
           if (currentWing === 'all' && i === mid + 1) {
             const aisle = document.createElement('div');
             aisle.className = fitToMobile ? 'w-1.5 sm:w-4 shrink-0' : 'w-4 shrink-0';
@@ -391,7 +381,6 @@
           btn.type = 'button';
           btn.dataset.seatId = seatId;
 
-          // Mobil tam sığdırma vs Büyük görünüm boyutları
           btn.className = fitToMobile
             ? 'seat flex-1 max-w-[26px] h-6 sm:w-7 sm:h-7 rounded-[4px] sm:rounded-md text-[8px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0'
             : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0';
@@ -401,7 +390,6 @@
           rowWrap.appendChild(btn);
         }
 
-        // Sağ Sıra Harfi
         const lblR = document.createElement('div');
         lblR.className = lblL.className;
         lblR.innerText = row.r;
@@ -426,7 +414,6 @@
     function refreshUI() {
       const occupiedMap = getOccupiedSeatMap();
 
-      // Koltuk renklerini güncelle
       document.querySelectorAll('.seat').forEach(btn => {
         const sId = btn.dataset.seatId;
         btn.classList.remove(
@@ -438,21 +425,16 @@
         );
 
         if (selectedSeats.includes(sId)) {
-          // SEÇİLİ (Mavi)
           btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
         } else if (occupiedMap[sId]) {
-          // DOLU / KAYITLI (Kırmızı)
           btn.classList.add('bg-rose-600', 'text-white', 'border-rose-700');
         } else if (protocols[sId]) {
-          // PROTOKOL (Sarı)
           btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-500');
         } else {
-          // BOŞ (Yeşil)
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
         }
       });
 
-      // İstatistikleri Güncelle
       const totalSeats = 514;
       const fullCount = Object.keys(occupiedMap).length;
       const protoCount = Object.keys(protocols).length;
@@ -468,7 +450,6 @@
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
-      // Yönetici ise protokol yap/kaldır
       if (isAdmin) {
         if (occupiedMap[sId]) {
           alert(`Bu koltuk ${occupiedMap[sId].primaryName} adına kayıtlıdır (PNR: ${occupiedMap[sId].pnr}). Önce listeden kaydı silmelisiniz.`);
@@ -478,7 +459,6 @@
         return;
       }
 
-      // Normal kullanıcı tıklaması
       if (occupiedMap[sId]) {
         alert(`Bu koltuk DOLU! (${sId})`);
         return;
@@ -579,7 +559,6 @@
       const phone = document.getElementById('primary_phone').value.trim().replace(/\s+/g, '');
       const email = document.getElementById('primary_email').value.trim().toLowerCase();
 
-      // Aynı telefon veya e-posta kontrolü
       const isDup = Object.values(reservations).some(r => r && ((r.phone === phone) || (r.email === email)));
       if (isDup) {
         alert("Bu telefon numarası veya e-posta adresi ile daha önce kayıt yapılmıştır!");
@@ -608,14 +587,11 @@
         date: new Date().toLocaleString('tr-TR')
       };
 
-      // Seçili koltukları sıfırla ve taslağı temizle
       selectedSeats = [];
       formDraft = {};
 
-      // Kaydet ve anında kırmızıya çevir
       saveReservationData(pnr, record);
 
-      // Bilet Onay Modalını Göster
       document.getElementById('tPnr').innerText = pnr;
       document.getElementById('tName').innerText = record.primaryName;
       document.getElementById('tSeats').innerText = bookedSeats.join(', ');
@@ -626,7 +602,6 @@
       document.getElementById('ticketModal').classList.add('hidden');
     }
 
-    // Sağ alttaki Son Kayıtlar Kutusu
     function renderRecentList() {
       const box = document.getElementById('recentList');
       const list = Object.values(reservations).reverse();
