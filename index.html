@@ -20,7 +20,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col pb-10 overflow-x-hidden">
 
-  <!-- Üst Bar (Header) - Normal kullanıcılara Yönetici/Kayıt butonları KESİNLİKLE GÖRÜNMEZ -->
+  <!-- Üst Bar (Header) -->
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 min-w-0">
@@ -41,7 +41,7 @@
           <span>Biletimi Sorgula</span>
         </button>
 
-        <!-- GİZLİ BUTON: Başlangıçta gizlidir, sadece admin girişi yapılınca açılır -->
+        <!-- Gizli Kayıtlar Butonu (Admin girişi yapılınca görünür) -->
         <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
           <span>Kayıtlar (<span id="resCountBadge">0</span>)</span>
@@ -52,7 +52,7 @@
 
   <!-- Yönetici Paneli Aktif Olduğunda Çıkan Üst Bant -->
   <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-inner">
-    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak Protokol (Sarı) yapabilir, dolu (Kırmızı) koltuğa tıklayarak kimin oturduğunu görebilir/silebilirsiniz.</span>
+    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak <span class="text-amber-900 underline">Protokol (Sari)</span> yapabilir, dolu koltuğa tıklayarak detay görebilirsiniz.</span>
     <div class="flex items-center gap-1.5 ml-auto">
       <button onclick="openAdminModal()" class="bg-indigo-950 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesini Aç</button>
       <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış Yap</button>
@@ -99,7 +99,7 @@
         <div id="seatContainer" class="flex flex-col gap-1 items-center w-full"></div>
       </div>
 
-      <!-- Renk Açıklamaları -->
+      <!-- Lejant (Renk Açıklamaları) -->
       <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block shadow-inner"></span> Boş (<b id="statEmpty">0</b>)</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block shadow-inner"></span> Seçili</span>
@@ -433,18 +433,19 @@
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
+      // YÖNETİCİ MODUNDAYKEN PROTOKOL (SARI) VEYA DETAY/SİLME İŞLEMİ YAPILIR
       if (isAdmin) {
         if (occupiedMap[sId]) {
           const r = occupiedMap[sId];
           const guestObj = (r.guests || []).find(g => g.seat === sId);
           const guestName = guestObj ? `${guestObj.name} ${guestObj.surname}` : r.primaryName;
           const delConfirm = confirm(
-            `📌 KOLTUK DETAYI (${sId})\n\n` +
-            `Oturan Kişi: ${guestName}\n` +
+            `📌 DOLU KOLTUK BİLGİSİ (${sId})\n\n` +
+            `Oturan: ${guestName}\n` +
             `Kayıt Sahibi: ${r.primaryName}\n` +
             `Telefon: ${r.phone}\n` +
-            `PNR Kodu: ${r.pnr}\n\n` +
-            `Bu rezervasyonu İPTAL EDİP koltuğu boşa çıkarmak ister misiniz?`
+            `PNR: ${r.pnr}\n\n` +
+            `Bu rezervasyonu İPTAL EDİP koltuğu boşaltmak ister misiniz?`
           );
           if (delConfirm) deleteRes(r.pnr);
           return;
@@ -453,13 +454,14 @@
         return;
       }
 
-      if (occupiedMap[sId]) {
-        alert("Bu koltuk dolu, lütfen yeşil renkli boş bir koltuk seçiniz.");
+      // NORMAL KULLANICI İÇİN:
+      if (protocols[sId]) {
+        alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
         return;
       }
 
-      if (protocols[sId]) {
-        alert("Bu koltuk protokol için ayrılmıştır.");
+      if (occupiedMap[sId]) {
+        alert("Bu koltuk doludur.");
         return;
       }
 
