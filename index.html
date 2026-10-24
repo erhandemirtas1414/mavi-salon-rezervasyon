@@ -4,19 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
-  <!-- Tailwind CSS & Lucide Icons -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <!-- EmailJS SDK -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-    .seat { touch-action: manipulation; user-select: none; transition: all 0.15s ease; }
+    .seat { touch-action: manipulation; user-select: none; transition: transform 0.1s ease, background-color 0.15s ease; }
     .seat:active { transform: scale(0.85); }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
   </style>
 </head>
@@ -25,10 +24,14 @@
   <!-- Üst Bar -->
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
-      <div class="flex items-center space-x-2 min-w-0">
-        <!-- GİZLİ ADMİN GİRİŞİ: Bu koltuk ikonuna arka arkaya 5 kez tıklayın -->
-        <div id="secretLogo" onclick="handleSecretTap()" class="p-1.5 bg-indigo-800 rounded-lg shrink-0 cursor-pointer select-none" title="Yönetici Girişi İçin 5 Kez Tıklayın">
-          <i data-lucide="armchair" class="w-5 h-5 text-amber-400"></i>
+      <div class="flex items-center space-x-2.5 min-w-0">
+        <!-- GİZLİ ADMİN TETİKLEYİCİSİ: Bu koltuk ikonuna arka arkaya 5 kez tıklayın -->
+        <div id="secretLogo" onclick="handleSecretTap()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-xl shrink-0 cursor-pointer select-none shadow-inner" title="Yönetici Girişi İçin 5 Kez Tıklayın">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/>
+            <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/>
+            <path d="M5 18v2"/><path d="M19 18v2"/>
+          </svg>
         </div>
         <div class="truncate">
           <h1 class="text-xs sm:text-base font-bold leading-tight truncate">İzzet Baysal KM - Mavi Salon</h1>
@@ -37,28 +40,27 @@
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
-        <button onclick="checkMyTicket()" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-700">
-          <i data-lucide="search" class="w-3.5 h-3.5"></i>
+        <button onclick="checkMyTicket()" class="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-900 hover:bg-indigo-800 text-indigo-100 border border-indigo-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <span>Biletimi Sorgula</span>
         </button>
 
-        <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
-          <i data-lucide="users" class="w-3.5 h-3.5"></i>
-          <span>Kayıtlar (<span id="resCountBadge">0</span>)</span>
+        <button id="adminListBtn" onclick="openAdminModal()" class="hidden items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
+          <span>📋 Kayıtlar (<span id="resCountBadge">0</span>)</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Yönetici Paneli Üst Bant -->
-  <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-inner">
+  <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex-wrap items-center justify-between gap-2 shadow-inner">
     <div class="flex items-center gap-2 flex-wrap">
-      <span>⚙️ YÖNETİCİ MODU:</span>
-      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil veya Sarı koltuğa tıklayarak Protokol ayırabilir/kaldırabilirsiniz.</span>
+      <span>⚙️ YÖNETİCİ MODU AKTİF:</span>
+      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil veya Sarı koltuğa tıklayarak Protokol (Sarı) ayırabilir / kaldırabilirsiniz.</span>
     </div>
     <div class="flex items-center gap-1.5 ml-auto">
-      <button onclick="setEmailJsKeyPrompt()" class="bg-indigo-800 text-white px-2.5 py-1 rounded text-[11px]">Mail Anahtarı Ayarla</button>
-      <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesi</button>
+      <button onclick="setEmailJsKeyPrompt()" class="bg-indigo-900 text-white px-2.5 py-1 rounded text-[11px]">✉️ Mail Anahtarı</button>
+      <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">📋 Kayıt Listesi</button>
       <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış</button>
     </div>
   </div>
@@ -76,8 +78,7 @@
           </div>
 
           <button id="zoomBtn" onclick="toggleMobileZoom()" class="sm:hidden flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
-            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
-            <span id="zoomBtnText">Büyüt</span>
+            <span id="zoomBtnText">🔍 Büyüt</span>
           </button>
         </div>
 
@@ -88,6 +89,7 @@
         </div>
       </div>
 
+      <!-- SAHNE -->
       <div class="w-full max-w-md my-1.5 px-2 flex flex-col items-center">
         <div class="w-full h-7 bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 rounded-t-2xl flex items-center justify-center text-white text-[11px] font-extrabold tracking-[0.25em] border-b-2 border-amber-400 shadow-sm">
           SAHNE
@@ -95,15 +97,17 @@
         <span class="text-[10px] text-slate-400 mt-0.5">Ön Sıralar (A Sırası)</span>
       </div>
 
+      <!-- KOLTUK DİZİLİM ALANI -->
       <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1 flex justify-center">
         <div id="seatContainer" class="flex flex-col gap-1 items-center w-full"></div>
       </div>
 
+      <!-- Renk Açıklamaları -->
       <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block shadow-inner"></span> Boş (<b id="statEmpty">0</b>)</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block shadow-inner"></span> Seçili</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block shadow-inner"></span> Dolu (<b id="statFull">0</b>)</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-400 inline-block shadow-inner"></span> Protokol (<b id="statProto">0</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş (<b id="statEmpty">514</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block"></span> Seçili</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu (<b id="statFull">0</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-400 inline-block"></span> Protokol (<b id="statProto">0</b>)</span>
       </div>
     </div>
 
@@ -111,15 +115,11 @@
     <div id="formSection" class="lg:col-span-4 flex flex-col gap-3">
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
-          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-            <i data-lucide="ticket" class="w-4 h-4 text-indigo-600"></i>
-            Rezervasyon Formu
-          </h2>
+          <h2 class="text-sm font-bold text-slate-900">🎟️ Rezervasyon Formu</h2>
           <span id="seatBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0/4 Seçildi</span>
         </div>
 
         <div id="emptyHint" class="py-10 text-center text-slate-400 text-xs">
-          <i data-lucide="mouse-pointer-click" class="w-7 h-7 mx-auto mb-1.5 text-slate-300"></i>
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
         </div>
 
@@ -127,7 +127,6 @@
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="check-circle" class="w-4 h-4"></i>
             <span>Rezervasyonu Tamamla</span>
           </button>
           <p class="text-[10px] text-slate-400 text-center">Aynı telefon ve e-posta ile tek kayıt yapılabilir.</p>
@@ -140,9 +139,7 @@
   <!-- OTP (E-Posta Doğrulama Kodu) Modalı -->
   <div id="otpModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
-      <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2">
-        <i data-lucide="mail-open" class="w-6 h-6"></i>
-      </div>
+      <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 text-xl">✉️</div>
       <h3 class="text-base font-bold text-slate-900">E-Posta Doğrulaması</h3>
       <p class="text-xs text-slate-500 mt-0.5"><strong id="otpTargetEmail" class="text-indigo-600"></strong> adresine gönderilen 6 haneli doğrulama kodunu giriniz.</p>
       
@@ -151,8 +148,8 @@
       </div>
 
       <div class="flex gap-2 w-full">
-        <button onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
-        <button onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
+        <button type="button" onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
+        <button type="button" onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
       </div>
     </div>
   </div>
@@ -160,9 +157,7 @@
   <!-- Bilet Onay Modalı -->
   <div id="ticketModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
-      <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
-        <i data-lucide="check-check" class="w-6 h-6"></i>
-      </div>
+      <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 text-xl">✅</div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
       <p class="text-xs text-slate-500 mt-0.5">Kaydınız başarıyla tamamlandı. Lütfen PNR kodunuzu saklayınız.</p>
       
@@ -172,7 +167,7 @@
         <div><span class="text-slate-400">Koltuklar:</span> <strong id="tSeats" class="text-rose-600 font-extrabold"></strong></div>
       </div>
 
-      <button onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
+      <button type="button" onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
     </div>
   </div>
 
@@ -180,8 +175,8 @@
   <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-4xl max-h-[88vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
       <div class="p-3 bg-slate-900 text-white flex justify-between items-center text-xs">
-        <span class="font-bold flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i> Yönetici Paneli - Kayıtlı Katılımcı Listesi</span>
-        <button onclick="closeAdminModal()" class="p-1 hover:bg-slate-800 rounded"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <span class="font-bold">🛡️ Yönetici Paneli - Kayıtlı Katılımcı Listesi</span>
+        <button type="button" onclick="closeAdminModal()" class="px-2 py-1 hover:bg-slate-800 rounded font-bold">✕ Kapat</button>
       </div>
       <div class="p-2.5 bg-slate-50 border-b flex flex-wrap justify-between items-center gap-2 text-xs">
         <div class="flex items-center gap-2">
@@ -189,12 +184,8 @@
           <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="İsim, PNR veya koltuk ara..." class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs bg-white">
         </div>
         <div class="flex gap-1.5">
-          <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel (CSV) İndir
-          </button>
-          <button onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1.5 rounded-lg font-bold">
-            Tümünü Sıfırla
-          </button>
+          <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
+          <button type="button" onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1.5 rounded-lg font-bold">Tümünü Sıfırla</button>
         </div>
       </div>
       <div class="flex-1 overflow-y-auto p-2 sm:p-3">
@@ -218,43 +209,8 @@
 
   <script>
     // =========================================================================
-    // 1. FIREBASE VE EMAILJS AYARLARI (Hatasız Temiz Kod)
+    // 1. SALON PLANI VE TEMEL DEĞİŞKENLER (HİÇBİR DIŞ SERVİSE BAĞIMLI DEĞİLDİR)
     // =========================================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
-      authDomain: "baibu-mavi-salon.firebaseapp.com",
-      databaseURL: "https://baibu-mavi-salon-default-rtdb.firebaseio.com",
-      projectId: "baibu-mavi-salon",
-      storageBucket: "baibu-mavi-salon.firebasestorage.app",
-      messagingSenderId: "502256070432",
-      appId: "1:502256070432:web:fb7d95759d6b907395f145",
-      measurementId: "G-S77RDCE982"
-    };
-
-    const EMAILJS_SERVICE_ID = "service_oev4nmh";
-    const EMAILJS_TEMPLATE_ID = "template_v2mxl5w";
-    // EmailJS > Account sekmesindeki Public Key değerinizi buraya yazabilir veya Yönetici panelinden girebilirsiniz:
-    let EMAILJS_PUBLIC_KEY = localStorage.getItem('baibu_emailjs_pubkey') || "";
-
-    let db = null;
-    let isFirebaseLive = false;
-
-    try {
-      firebase.initializeApp(firebaseConfig);
-      db = firebase.database();
-      isFirebaseLive = true;
-    } catch (e) {
-      console.warn("Firebase başlatma uyarısı:", e);
-    }
-
-    try {
-      if (EMAILJS_PUBLIC_KEY && window.emailjs) {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-      }
-    } catch (e) {
-      console.warn("EmailJS başlatma uyarısı:", e);
-    }
-
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
       { r: 'E', n: 25 }, { r: 'F', n: 26 }, { r: 'G', n: 26 }, { r: 'H', n: 26 },
@@ -277,119 +233,116 @@
 
     let generatedOtp = "";
     let pendingRecord = null;
-
     let secretTapCount = 0;
     let secretTapTimer = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      if (window.lucide) lucide.createIcons();
-      loadData();
+    // FIREBASE VE EMAILJS BİLGİLERİ
+    const firebaseConfig = {
+      apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
+      authDomain: "baibu-mavi-salon.firebaseapp.com",
+      databaseURL: "https://baibu-mavi-salon-default-rtdb.firebaseio.com",
+      projectId: "baibu-mavi-salon",
+      storageBucket: "baibu-mavi-salon.firebasestorage.app",
+      messagingSenderId: "502256070432",
+      appId: "1:502256070432:web:fb7d95759d6b907395f145",
+      measurementId: "G-S77RDCE982"
+    };
+
+    const EMAILJS_SERVICE_ID = "service_oev4nmh";
+    const EMAILJS_TEMPLATE_ID = "template_v2mxl5w";
+    let EMAILJS_PUBLIC_KEY = "";
+
+    let db = null;
+    let isFirebaseLive = false;
+
+    // =========================================================================
+    // 2. İLK ÇALIŞTIRMA: ÖNCE KOLTUKLARI ÇİZ, SONRA VERİTABANINA BAĞLAN
+    // =========================================================================
+    function initApp() {
+      // 1. Koltukları hemen ekrana çiz (Kesintisiz ve garantili)
       renderGrid();
 
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('yonetim') || params.has('admin')) {
-        setTimeout(() => promptAdminLogin(), 400);
-      }
-    });
-
-    function loadData() {
+      // 2. Yerel verileri yükle
       try {
+        EMAILJS_PUBLIC_KEY = localStorage.getItem('baibu_emailjs_pubkey') || "";
         const localRes = localStorage.getItem('baibu_mavi_res_v2');
         const localProto = localStorage.getItem('baibu_mavi_proto_v2');
         if (localRes) reservations = JSON.parse(localRes);
         if (localProto) protocols = JSON.parse(localProto);
-      } catch (e) { console.error(e); }
+        refreshUI();
+      } catch (e) {
+        console.warn("Yerel veri okuma uyarısı:", e);
+      }
 
-      refreshUI();
-
-      if (isFirebaseLive && db) {
-        db.ref('reservations').on('value', snap => {
-          reservations = snap.val() || {};
-          localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-          refreshUI();
-        });
-        db.ref('protocols').on('value', snap => {
-          protocols = snap.val() || {};
-          localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
-          refreshUI();
-        });
-        db.ref('config/emailjs_pubkey').on('value', snap => {
-          if (snap.exists() && snap.val()) {
-            EMAILJS_PUBLIC_KEY = snap.val();
-            localStorage.setItem('baibu_emailjs_pubkey', EMAILJS_PUBLIC_KEY);
-            if (window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
+      // 3. Firebase'i güvenli şekilde başlat
+      try {
+        if (typeof firebase !== 'undefined') {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
           }
-        });
+          db = firebase.database();
+          isFirebaseLive = true;
+
+          db.ref('reservations').on('value', snap => {
+            reservations = snap.val() || {};
+            localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
+            refreshUI();
+          });
+          db.ref('protocols').on('value', snap => {
+            protocols = snap.val() || {};
+            localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
+            refreshUI();
+          });
+          db.ref('config/emailjs_pubkey').on('value', snap => {
+            if (snap.exists() && snap.val()) {
+              EMAILJS_PUBLIC_KEY = snap.val();
+              localStorage.setItem('baibu_emailjs_pubkey', EMAILJS_PUBLIC_KEY);
+              if (typeof emailjs !== 'undefined') emailjs.init(EMAILJS_PUBLIC_KEY);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Firebase bağlantı uyarısı:", e);
+      }
+
+      // 4. EmailJS'i güvenli şekilde başlat
+      try {
+        if (EMAILJS_PUBLIC_KEY && typeof emailjs !== 'undefined') {
+          emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+      } catch (e) {
+        console.warn("EmailJS uyarısı:", e);
+      }
+
+      // 5. URL'de ?yonetim varsa şifre ekranını aç
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('yonetim') || params.has('admin')) {
+        setTimeout(() => promptAdminLogin(), 300);
       }
     }
 
-    function saveReservationData(pnr, record) {
-      reservations[pnr] = record;
-      localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-      refreshUI();
-
-      if (isFirebaseLive && db) {
-        db.ref('reservations/' + pnr).set(record).catch(err => console.warn(err));
-      }
+    // Sayfa yüklenir yüklenmez çalıştır
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
     }
 
-    function toggleProtocolSeat(seatId) {
-      if (protocols[seatId]) {
-        delete protocols[seatId];
-      } else {
-        protocols[seatId] = true;
-      }
-
-      // Eğer protokol yapılan koltuk seçili koltuklar arasındaysa çıkar
-      selectedSeats = selectedSeats.filter(s => s !== seatId);
-
-      localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
-      refreshUI();
-
-      if (isFirebaseLive && db) {
-        if (protocols[seatId]) db.ref('protocols/' + seatId).set(true);
-        else db.ref('protocols/' + seatId).remove();
-      }
-    }
-
-    function switchFloor(fl) {
-      currentFloor = fl;
-      document.getElementById('tabAlt').className = fl === 'alt'
-        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
-      document.getElementById('tabBalkon').className = fl === 'balkon'
-        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
-      renderGrid();
-    }
-
-    function setWing(wing) {
-      currentWing = wing;
-      ['all', 'left', 'right'].forEach(w => {
-        const btn = document.getElementById('wing' + w.charAt(0).toUpperCase() + w.slice(1));
-        btn.className = (w === wing)
-          ? 'flex-1 py-1 font-bold rounded-lg bg-white shadow-sm text-indigo-700'
-          : 'flex-1 py-1 text-slate-600 font-medium rounded-lg';
-      });
-      renderGrid();
-    }
-
-    function toggleMobileZoom() {
-      mobileFitMode = !mobileFitMode;
-      document.getElementById('zoomBtnText').innerText = mobileFitMode ? 'Büyüt' : 'Ekrana Sığdır';
-      renderGrid();
-    }
-
+    // =========================================================================
+    // 3. KOLTUKLARI ÇİZME VE GÜNCELLEME
+    // =========================================================================
     function renderGrid() {
       const container = document.getElementById('seatContainer');
+      if (!container) return;
       container.innerHTML = '';
+
       const cfg = currentFloor === 'alt' ? altPlan : balkonPlan;
       const fitToMobile = (currentWing === 'all' && mobileFitMode);
 
       cfg.forEach(row => {
         const rowWrap = document.createElement('div');
         rowWrap.className = fitToMobile
-          ? 'flex items-center justify-center gap-[1.5px] sm:gap-1 w-full'
+          ? 'flex items-center justify-center gap-[2px] sm:gap-1 w-full'
           : 'flex items-center justify-center gap-1 min-w-max px-1';
 
         const lblL = document.createElement('div');
@@ -417,8 +370,8 @@
           btn.dataset.seatId = seatId;
 
           btn.className = fitToMobile
-            ? 'seat flex-1 max-w-[26px] h-6 sm:w-7 sm:h-7 rounded-[4px] sm:rounded-md text-[8px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0'
-            : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0';
+            ? 'seat flex-1 max-w-[26px] h-6 sm:w-7 sm:h-7 rounded-[4px] sm:rounded-md text-[8px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600'
+            : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
 
           btn.innerText = i;
           btn.onclick = () => onSeatClick(seatId);
@@ -438,7 +391,7 @@
 
     function getOccupiedSeatMap() {
       const map = {};
-      Object.values(reservations).forEach(r => {
+      Object.values(reservations || {}).forEach(r => {
         if (r && Array.isArray(r.seats)) {
           r.seats.forEach(s => { map[s] = r; });
         }
@@ -463,7 +416,7 @@
           btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
         } else if (occupiedMap[sId]) {
           btn.classList.add('bg-rose-600', 'text-white', 'border-rose-700');
-        } else if (protocols[sId]) {
+        } else if (protocols && protocols[sId]) {
           btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-500');
         } else {
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
@@ -472,18 +425,50 @@
 
       const totalSeats = 514;
       const fullCount = Object.keys(occupiedMap).length;
-      const protoCount = Object.keys(protocols).length;
+      const protoCount = Object.keys(protocols || {}).length;
       document.getElementById('statFull').innerText = fullCount;
       document.getElementById('statProto').innerText = protoCount;
       document.getElementById('statEmpty').innerText = Math.max(0, totalSeats - fullCount - protoCount);
-      document.getElementById('resCountBadge').innerText = Object.keys(reservations).length;
+      document.getElementById('resCountBadge').innerText = Object.keys(reservations || {}).length;
 
       updateForm();
     }
 
+    function switchFloor(fl) {
+      currentFloor = fl;
+      document.getElementById('tabAlt').className = fl === 'alt'
+        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
+      document.getElementById('tabBalkon').className = fl === 'balkon'
+        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
+        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
+      renderGrid();
+    }
+
+    function setWing(wing) {
+      currentWing = wing;
+      ['all', 'left', 'right'].forEach(w => {
+        const btn = document.getElementById('wing' + w.charAt(0).toUpperCase() + w.slice(1));
+        btn.className = (w === wing)
+          ? 'flex-1 py-1 font-bold rounded-lg bg-white shadow-sm text-indigo-700'
+          : 'flex-1 py-1 text-slate-600 font-medium rounded-lg';
+      });
+      renderGrid();
+    }
+
+    function toggleMobileZoom() {
+      mobileFitMode = !mobileFitMode;
+      document.getElementById('zoomBtnText').innerText = mobileFitMode ? '🔍 Büyüt' : '📱 Ekrana Sığdır';
+      renderGrid();
+    }
+
+    // =========================================================================
+    // 4. KOLTUK TIKLAMA, PROTOKOL AYIRMA VE KAYIT İŞLEMLERİ
+    // =========================================================================
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
+      // YÖNETİCİ MODUNDAYKEN KOLTUĞA TIKLANIRSA PROTOKOL (SARI) YAPAR VEYA DETAY GÖSTERİR
       if (isAdmin) {
         if (occupiedMap[sId]) {
           const r = occupiedMap[sId];
@@ -504,7 +489,8 @@
         return;
       }
 
-      if (protocols[sId]) {
+      // NORMAL KULLANICI TIKLAMASI
+      if (protocols && protocols[sId]) {
         alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
         return;
       }
@@ -527,6 +513,32 @@
       }
 
       refreshUI();
+    }
+
+    function saveReservationData(pnr, record) {
+      reservations[pnr] = record;
+      localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
+      refreshUI();
+
+      if (isFirebaseLive && db) {
+        db.ref('reservations/' + pnr).set(record).catch(err => console.warn(err));
+      }
+    }
+
+    function toggleProtocolSeat(seatId) {
+      if (protocols[seatId]) {
+        delete protocols[seatId];
+      } else {
+        protocols[seatId] = true;
+      }
+      selectedSeats = selectedSeats.filter(s => s !== seatId);
+      localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
+      refreshUI();
+
+      if (isFirebaseLive && db) {
+        if (protocols[seatId]) db.ref('protocols/' + seatId).set(true);
+        else db.ref('protocols/' + seatId).remove();
+      }
     }
 
     function saveCurrentFormDraft() {
@@ -628,8 +640,8 @@
         date: new Date().toLocaleString('tr-TR')
       };
 
-      // Eğer EmailJS Public Key girilmemişse doğrudan kaydet (sistemin tıkanmaması için)
-      if (!EMAILJS_PUBLIC_KEY) {
+      // Eğer EmailJS Public Key girilmemişse doğrudan kaydet
+      if (!EMAILJS_PUBLIC_KEY || typeof emailjs === 'undefined') {
         finalizeReservation();
         return;
       }
@@ -653,12 +665,11 @@
         document.getElementById('otpModal').classList.remove('hidden');
       } catch (err) {
         console.error("EmailJS Hatası:", err);
-        alert("E-posta doğrulama kodu gönderilemedi (EmailJS ayarlarınızı kontrol edin). Kaydınız doğrudan tamamlanıyor.");
+        alert("E-posta doğrulama kodu gönderilemedi. Kaydınız doğrudan tamamlanıyor.");
         finalizeReservation();
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> <span>Rezervasyonu Tamamla</span>`;
-        if (window.lucide) lucide.createIcons();
+        btn.innerHTML = `<span>Rezervasyonu Tamamla</span>`;
       }
     }
 
@@ -668,7 +679,6 @@
         alert("Hatalı doğrulama kodu! Lütfen e-postanıza gelen 6 haneli kodu doğru yazın.");
         return;
       }
-
       document.getElementById('otpModal').classList.add('hidden');
       document.getElementById('otpInputCode').value = "";
       finalizeReservation();
@@ -713,6 +723,9 @@
       document.getElementById('ticketModal').classList.remove('hidden');
     }
 
+    // =========================================================================
+    // 5. GİZLİ ADMİN GİRİŞİ VE YÖNETİM PANELİ
+    // =========================================================================
     function handleSecretTap() {
       secretTapCount++;
       clearTimeout(secretTapTimer);
@@ -724,12 +737,7 @@
       }
     }
 
-    async function sha256(str) {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-    }
-
-    async function promptAdminLogin() {
+    function promptAdminLogin() {
       if (isAdmin) {
         openAdminModal();
         return;
@@ -737,36 +745,38 @@
       const p = prompt("🔐 Yönetici Şifresini Giriniz:");
       if (!p) return;
 
-      const validHashes = [
-        "10e9c2817f67668970155246f0e498e7c580f65934817665a5e5c21a60065678",
-        "f62e592131919c871950e6e72038922f107419573f33128725088f274c04e71c"
-      ];
-      const hashedInput = await sha256(p.trim());
-
-      if (validHashes.includes(hashedInput) || ["baibu2026", "admin14", "mavisalon"].includes(p.trim())) {
+      if (["baibu2026", "admin14", "mavisalon"].includes(p.trim())) {
         isAdmin = true;
-        document.getElementById('adminBanner').classList.remove('hidden');
-        document.getElementById('adminListBtn').classList.remove('hidden');
+        const banner = document.getElementById('adminBanner');
+        const listBtn = document.getElementById('adminListBtn');
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+        listBtn.classList.remove('hidden');
+        listBtn.classList.add('flex');
       } else {
         alert("Yetkisiz erişim! Şifre hatalı.");
       }
     }
 
     function setEmailJsKeyPrompt() {
-      const k = prompt("EmailJS Public Key değerinizi giriniz (Account sekmesinde bulunur):", EMAILJS_PUBLIC_KEY);
+      const k = prompt("EmailJS Public Key değerinizi giriniz (EmailJS -> Account sekmesinde bulunur):", EMAILJS_PUBLIC_KEY);
       if (k !== null) {
         EMAILJS_PUBLIC_KEY = k.trim();
         localStorage.setItem('baibu_emailjs_pubkey', EMAILJS_PUBLIC_KEY);
         if (isFirebaseLive && db) db.ref('config/emailjs_pubkey').set(EMAILJS_PUBLIC_KEY);
-        if (EMAILJS_PUBLIC_KEY && window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
+        if (EMAILJS_PUBLIC_KEY && typeof emailjs !== 'undefined') emailjs.init(EMAILJS_PUBLIC_KEY);
         alert("EmailJS Public Key kaydedildi!");
       }
     }
 
     function exitAdmin() {
       isAdmin = false;
-      document.getElementById('adminBanner').classList.add('hidden');
-      document.getElementById('adminListBtn').classList.add('hidden');
+      const banner = document.getElementById('adminBanner');
+      const listBtn = document.getElementById('adminListBtn');
+      banner.classList.add('hidden');
+      banner.classList.remove('flex');
+      listBtn.classList.add('hidden');
+      listBtn.classList.remove('flex');
       closeAdminModal();
       refreshUI();
     }
@@ -782,7 +792,7 @@
       const query = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
       tbody.innerHTML = '';
 
-      const allList = Object.values(reservations).reverse();
+      const allList = Object.values(reservations || {}).reverse();
       const filtered = allList.filter(r => {
         if (!query) return true;
         const hay = `${r.pnr} ${r.primaryName} ${r.phone} ${r.email} ${(r.seats || []).join(' ')}`.toLowerCase();
@@ -808,7 +818,7 @@
           <td class="p-2 text-slate-600">${gList}</td>
           <td class="p-2 text-[10px] text-slate-400">${r.date || '-'}</td>
           <td class="p-2 text-right">
-            <button onclick="deleteRes('${r.pnr}')" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded font-bold">Sil</button>
+            <button type="button" onclick="deleteRes('${r.pnr}')" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded font-bold">Sil</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -850,7 +860,7 @@
     function exportCSV() {
       if (!isAdmin) return;
       let csv = "\uFEFFPNR;Kayıt Sahibi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Tarih\n";
-      Object.values(reservations).forEach(r => {
+      Object.values(reservations || {}).forEach(r => {
         const gText = (r.guests || []).map(g => `${g.name} ${g.surname} (${g.seat})`).join(' | ');
         csv += `"${r.pnr}";"${r.primaryName}";"${r.phone}";"${r.email}";"${(r.seats || []).join(', ')}";"${gText}";"${r.date}"\n`;
       });
