@@ -149,7 +149,7 @@
 
       <div class="flex gap-2 w-full">
         <button type="button" onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
-        <button type="button" onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
+        <button type="button" id="otpVerifyBtn" onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
       </div>
     </div>
   </div>
@@ -209,7 +209,7 @@
 
   <script>
     // =========================================================================
-    // 1. SALON PLANI VE TEMEL DEĞİŞKENLER (HİÇBİR DIŞ SERVİSE BAĞIMLI DEĞİLDİR)
+    // 1. SALON PLANI VE TEMEL DEĞİŞKENLER
     // =========================================================================
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
@@ -256,13 +256,11 @@
     let isFirebaseLive = false;
 
     // =========================================================================
-    // 2. İLK ÇALIŞTIRMA: ÖNCE KOLTUKLARI ÇİZ, SONRA VERİTABANINA BAĞLAN
+    // 2. İLK ÇALIŞTIRMA
     // =========================================================================
     function initApp() {
-      // 1. Koltukları hemen ekrana çiz (Kesintisiz ve garantili)
       renderGrid();
 
-      // 2. Yerel verileri yükle
       try {
         EMAILJS_PUBLIC_KEY = localStorage.getItem('baibu_emailjs_pubkey') || "";
         const localRes = localStorage.getItem('baibu_mavi_res_v2');
@@ -274,7 +272,6 @@
         console.warn("Yerel veri okuma uyarısı:", e);
       }
 
-      // 3. Firebase'i güvenli şekilde başlat
       try {
         if (typeof firebase !== 'undefined') {
           if (!firebase.apps.length) {
@@ -305,7 +302,6 @@
         console.warn("Firebase bağlantı uyarısı:", e);
       }
 
-      // 4. EmailJS'i güvenli şekilde başlat
       try {
         if (EMAILJS_PUBLIC_KEY && typeof emailjs !== 'undefined') {
           emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -314,14 +310,12 @@
         console.warn("EmailJS uyarısı:", e);
       }
 
-      // 5. URL'de ?yonetim varsa şifre ekranını aç
       const params = new URLSearchParams(window.location.search);
       if (params.has('yonetim') || params.has('admin')) {
         setTimeout(() => promptAdminLogin(), 300);
       }
     }
 
-    // Sayfa yüklenir yüklenmez çalıştır
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initApp);
     } else {
@@ -402,6 +396,15 @@
     function refreshUI() {
       const occupiedMap = getOccupiedSeatMap();
 
+      // Eğer kullanıcının seçtiği koltuklardan biri o sırada başkası tarafından alındıysa otomatik seçimden düşür
+      if (selectedSeats.length > 0) {
+        const newlyTaken = selectedSeats.filter(s => occupiedMap[s] || (protocols && protocols[s]));
+        if (newlyTaken.length > 0) {
+          saveCurrentFormDraft();
+          selectedSeats = selectedSeats.filter(s => !occupiedMap[s] && !(protocols && protocols[s]));
+        }
+      }
+
       document.querySelectorAll('.seat').forEach(btn => {
         const sId = btn.dataset.seatId;
         btn.classList.remove(
@@ -463,12 +466,11 @@
     }
 
     // =========================================================================
-    // 4. KOLTUK TIKLAMA, PROTOKOL AYIRMA VE KAYIT İŞLEMLERİ
+    // 4. KOLTUK TIKLAMA, PROTOKOL AYIRMA VE ÇAKIŞMA KORUMALI KAYIT
     // =========================================================================
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
-      // YÖNETİCİ MODUNDAYKEN KOLTUĞA TIKLANIRSA PROTOKOL (SARI) YAPAR VEYA DETAY GÖSTERİR
       if (isAdmin) {
         if (occupiedMap[sId]) {
           const r = occupiedMap[sId];
@@ -489,7 +491,6 @@
         return;
       }
 
-      // NORMAL KULLANICI TIKLAMASI
       if (protocols && protocols[sId]) {
         alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
         return;
@@ -513,6 +514,26 @@
       }
 
       refreshUI();
+    }
+
+    // CANLI ÇAKIŞMA KONTROLÜ (Koltuklar hala boş mu?)
+    async function checkSeatConflictLive(seatsToCheck) {
+      if (isFirebaseLive && db) {
+        try {
+          const [resSnap, protoSnap] = await Promise.all([
+            db.ref('reservations').get(),
+            db.ref('protocols').get()
+          ]);
+          reservations = resSnap.val() || {};
+          protocols = protoSnap.val() || {};
+        } catch (err) {
+          console.warn("Canlı kontrol uyarısı, yerel önbellek kullanılıyor:", err);
+        }
+      }
+
+      const occupiedMap = getOccupiedSeatMap();
+      const takenSeats = seatsToCheck.filter(s => occupiedMap[s] || (protocols && protocols[s]));
+      return takenSeats;
     }
 
     function saveReservationData(pnr, record) {
@@ -610,49 +631,64 @@
       e.preventDefault();
       if (selectedSeats.length === 0) return;
 
+      saveCurrentFormDraft();
+
       const phone = document.getElementById('primary_phone').value.trim().replace(/\s+/g, '');
       const email = document.getElementById('primary_email').value.trim().toLowerCase();
 
-      const isDup = Object.values(reservations).some(r => r && ((r.phone === phone) || (r.email === email)));
-      if (isDup) {
-        alert("Bu telefon numarası veya e-posta adresi ile daha önce kayıt yapılmıştır!");
-        return;
-      }
-
-      const pnr = 'BAIBU-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-      const guests = [];
-
-      for (let i = 0; i < selectedSeats.length; i++) {
-        guests.push({
-          seat: selectedSeats[i],
-          name: document.getElementById(`name_${i}`).value.trim(),
-          surname: document.getElementById(`surname_${i}`).value.trim()
-        });
-      }
-
-      pendingRecord = {
-        pnr: pnr,
-        primaryName: `${guests[0].name} ${guests[0].surname}`,
-        phone: phone,
-        email: email,
-        seats: [...selectedSeats],
-        guests: guests,
-        date: new Date().toLocaleString('tr-TR')
-      };
-
-      // Eğer EmailJS Public Key girilmemişse doğrudan kaydet
-      if (!EMAILJS_PUBLIC_KEY || typeof emailjs === 'undefined') {
-        finalizeReservation();
-        return;
-      }
-
-      generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerText = "Kod Gönderiliyor...";
+      btn.innerText = "Koltuklar Kontrol Ediliyor...";
 
       try {
+        // 1. AŞAMA CANLI ÇAKIŞMA KONTROLÜ
+        const takenSeats = await checkSeatConflictLive(selectedSeats);
+        if (takenSeats.length > 0) {
+          selectedSeats = selectedSeats.filter(s => !takenSeats.includes(s));
+          refreshUI();
+          alert(`⚠️ DİKKAT: Seçtiğiniz [${takenSeats.join(', ')}] numaralı koltuk(lar) siz formu doldururken başka bir katılımcı tarafından alındı!\n\nLütfen yerine yeşil renkli boş bir koltuk seçip tekrar onaylayın.`);
+          return;
+        }
+
+        // Mükerrer telefon / e-posta kontrolü
+        const isDup = Object.values(reservations).some(r => r && ((r.phone === phone) || (r.email === email)));
+        if (isDup) {
+          alert("Bu telefon numarası veya e-posta adresi ile daha önce kayıt yapılmıştır!");
+          return;
+        }
+
+        const pnr = 'BAIBU-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+        const guests = [];
+
+        for (let i = 0; i < selectedSeats.length; i++) {
+          const seatCode = selectedSeats[i];
+          const draft = formDraft[seatCode] || { name: '', surname: '' };
+          guests.push({
+            seat: seatCode,
+            name: (document.getElementById(`name_${i}`)?.value || draft.name).trim(),
+            surname: (document.getElementById(`surname_${i}`)?.value || draft.surname).trim()
+          });
+        }
+
+        pendingRecord = {
+          pnr: pnr,
+          primaryName: `${guests[0].name} ${guests[0].surname}`,
+          phone: phone,
+          email: email,
+          seats: [...selectedSeats],
+          guests: guests,
+          date: new Date().toLocaleString('tr-TR')
+        };
+
+        // Eğer EmailJS Public Key girilmemişse doğrudan kaydet
+        if (!EMAILJS_PUBLIC_KEY || typeof emailjs === 'undefined') {
+          await finalizeReservation();
+          return;
+        }
+
+        generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        btn.innerText = "Doğrulama Kodu Gönderiliyor...";
+
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
           to_email: email,
           email: email,
@@ -664,28 +700,49 @@
         document.getElementById('otpTargetEmail').innerText = email;
         document.getElementById('otpModal').classList.remove('hidden');
       } catch (err) {
-        console.error("EmailJS Hatası:", err);
-        alert("E-posta doğrulama kodu gönderilemedi. Kaydınız doğrudan tamamlanıyor.");
-        finalizeReservation();
+        console.error("EmailJS / İşlem Hatası:", err);
+        alert("E-posta doğrulama servisine ulaşılamadı, kaydınız doğrudan tamamlanıyor.");
+        await finalizeReservation();
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>Rezervasyonu Tamamla</span>`;
       }
     }
 
-    function verifyOtpAndSave() {
+    async function verifyOtpAndSave() {
       const userCode = document.getElementById('otpInputCode').value.trim();
       if (userCode !== generatedOtp) {
         alert("Hatalı doğrulama kodu! Lütfen e-postanıza gelen 6 haneli kodu doğru yazın.");
         return;
       }
-      document.getElementById('otpModal').classList.add('hidden');
-      document.getElementById('otpInputCode').value = "";
-      finalizeReservation();
+
+      const verifyBtn = document.getElementById('otpVerifyBtn');
+      verifyBtn.disabled = true;
+      verifyBtn.innerText = "Kaydediliyor...";
+
+      try {
+        document.getElementById('otpModal').classList.add('hidden');
+        document.getElementById('otpInputCode').value = "";
+        await finalizeReservation();
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = "Onayla ve Bitir";
+      }
     }
 
-    function finalizeReservation() {
+    async function finalizeReservation() {
       if (!pendingRecord) return;
+
+      // 2. AŞAMA SON SANİYE ÇAKIŞMA KONTROLÜ (OTP girilirken koltuk alındı mı?)
+      const takenSeats = await checkSeatConflictLive(pendingRecord.seats);
+      if (takenSeats.length > 0) {
+        selectedSeats = selectedSeats.filter(s => !takenSeats.includes(s));
+        pendingRecord = null;
+        refreshUI();
+        alert(`⚠️ ÜZGÜNÜZ: Doğrulama işlemi sırasında [${takenSeats.join(', ')}] numaralı koltuk başka bir kullanıcı tarafından alındı! Lütfen başka bir boş koltuk seçiniz.`);
+        return;
+      }
+
       const bookedSeats = [...pendingRecord.seats];
       saveReservationData(pendingRecord.pnr, pendingRecord);
 
@@ -697,6 +754,7 @@
       selectedSeats = [];
       formDraft = {};
       pendingRecord = null;
+      refreshUI();
     }
 
     function cancelOtp() {
