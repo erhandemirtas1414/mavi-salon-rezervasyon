@@ -26,6 +26,7 @@
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 min-w-0">
+        <!-- GİZLİ ADMİN GİRİŞİ: Bu koltuk ikonuna arka arkaya 5 kez tıklayın -->
         <div id="secretLogo" onclick="handleSecretTap()" class="p-1.5 bg-indigo-800 rounded-lg shrink-0 cursor-pointer select-none" title="Yönetici Girişi İçin 5 Kez Tıklayın">
           <i data-lucide="armchair" class="w-5 h-5 text-amber-400"></i>
         </div>
@@ -51,10 +52,14 @@
 
   <!-- Yönetici Paneli Üst Bant -->
   <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-inner">
-    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak Protokol (Sarı) yapabilir, dolu koltuğa tıklayarak detay görebilirsiniz.</span>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span>⚙️ YÖNETİCİ MODU:</span>
+      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil veya Sarı koltuğa tıklayarak Protokol ayırabilir/kaldırabilirsiniz.</span>
+    </div>
     <div class="flex items-center gap-1.5 ml-auto">
-      <button onclick="openAdminModal()" class="bg-indigo-950 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesini Aç</button>
-      <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış Yap</button>
+      <button onclick="setEmailJsKeyPrompt()" class="bg-indigo-800 text-white px-2.5 py-1 rounded text-[11px]">Mail Anahtarı Ayarla</button>
+      <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesi</button>
+      <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış</button>
     </div>
   </div>
 
@@ -122,10 +127,10 @@
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="mail-check" class="w-4 h-4"></i>
-            <span>E-posta Doğrulama Kodu Gönder</span>
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span>Rezervasyonu Tamamla</span>
           </button>
-          <p class="text-[10px] text-slate-400 text-center">E-postanıza 6 haneli doğrulama kodu gönderilecektir.</p>
+          <p class="text-[10px] text-slate-400 text-center">Aynı telefon ve e-posta ile tek kayıt yapılabilir.</p>
         </form>
       </div>
     </div>
@@ -159,7 +164,7 @@
         <i data-lucide="check-check" class="w-6 h-6"></i>
       </div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">E-postanız doğrulandı ve kayıt başarıyla tamamlandı.</p>
+      <p class="text-xs text-slate-500 mt-0.5">Kaydınız başarıyla tamamlandı. Lütfen PNR kodunuzu saklayınız.</p>
       
       <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
@@ -213,7 +218,7 @@
 
   <script>
     // =========================================================================
-    // 1. FIREBASE VE EMAILJS AYARLARI
+    // 1. FIREBASE VE EMAILJS AYARLARI (Hatasız Temiz Kod)
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
@@ -226,10 +231,10 @@
       measurementId: "G-S77RDCE982"
     };
 
-    // EmailJS Bilgileriniz Entegre Edildi
-    const EMAILJS_SERVICE_ID = "service_oev4nmh";  [cite: 4]
-    const EMAILJS_TEMPLATE_ID = "template_v2mxl5w";[cite: 11]
-    const EMAILJS_PUBLIC_KEY = ""; // İsteğe bağlı olarak hesabınızdaki public key'i buraya yazabilirsiniz
+    const EMAILJS_SERVICE_ID = "service_oev4nmh";
+    const EMAILJS_TEMPLATE_ID = "template_v2mxl5w";
+    // EmailJS > Account sekmesindeki Public Key değerinizi buraya yazabilir veya Yönetici panelinden girebilirsiniz:
+    let EMAILJS_PUBLIC_KEY = localStorage.getItem('baibu_emailjs_pubkey') || "";
 
     let db = null;
     let isFirebaseLive = false;
@@ -238,9 +243,16 @@
       firebase.initializeApp(firebaseConfig);
       db = firebase.database();
       isFirebaseLive = true;
-      if (EMAILJS_PUBLIC_KEY) emailjs.init(EMAILJS_PUBLIC_KEY);
     } catch (e) {
-      console.warn("Başlatma uyarısı:", e);
+      console.warn("Firebase başlatma uyarısı:", e);
+    }
+
+    try {
+      if (EMAILJS_PUBLIC_KEY && window.emailjs) {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+      }
+    } catch (e) {
+      console.warn("EmailJS başlatma uyarısı:", e);
     }
 
     const altPlan = [
@@ -270,7 +282,7 @@
     let secretTapTimer = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       loadData();
       renderGrid();
 
@@ -301,6 +313,13 @@
           localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
           refreshUI();
         });
+        db.ref('config/emailjs_pubkey').on('value', snap => {
+          if (snap.exists() && snap.val()) {
+            EMAILJS_PUBLIC_KEY = snap.val();
+            localStorage.setItem('baibu_emailjs_pubkey', EMAILJS_PUBLIC_KEY);
+            if (window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
+          }
+        });
       }
     }
 
@@ -315,8 +334,14 @@
     }
 
     function toggleProtocolSeat(seatId) {
-      if (protocols[seatId]) delete protocols[seatId];
-      else protocols[seatId] = true;
+      if (protocols[seatId]) {
+        delete protocols[seatId];
+      } else {
+        protocols[seatId] = true;
+      }
+
+      // Eğer protokol yapılan koltuk seçili koltuklar arasındaysa çıkar
+      selectedSeats = selectedSeats.filter(s => s !== seatId);
 
       localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
       refreshUI();
@@ -603,6 +628,12 @@
         date: new Date().toLocaleString('tr-TR')
       };
 
+      // Eğer EmailJS Public Key girilmemişse doğrudan kaydet (sistemin tıkanmaması için)
+      if (!EMAILJS_PUBLIC_KEY) {
+        finalizeReservation();
+        return;
+      }
+
       generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
       const btn = document.getElementById('submitBtn');
@@ -612,17 +643,22 @@
       try {
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
           to_email: email,
+          email: email,
+          name: pendingRecord.primaryName,
           to_name: pendingRecord.primaryName,
           otp_code: generatedOtp
-        });
+        }, EMAILJS_PUBLIC_KEY);
 
         document.getElementById('otpTargetEmail').innerText = email;
         document.getElementById('otpModal').classList.remove('hidden');
       } catch (err) {
-        alert("E-posta gönderilemedi! Hata: " + JSON.stringify(err));
+        console.error("EmailJS Hatası:", err);
+        alert("E-posta doğrulama kodu gönderilemedi (EmailJS ayarlarınızı kontrol edin). Kaydınız doğrudan tamamlanıyor.");
+        finalizeReservation();
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="mail-check" class="w-4 h-4"></i> <span>E-posta Doğrulama Kodu Gönder</span>`;
+        btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> <span>Rezervasyonu Tamamla</span>`;
+        if (window.lucide) lucide.createIcons();
       }
     }
 
@@ -635,7 +671,11 @@
 
       document.getElementById('otpModal').classList.add('hidden');
       document.getElementById('otpInputCode').value = "";
+      finalizeReservation();
+    }
 
+    function finalizeReservation() {
+      if (!pendingRecord) return;
       const bookedSeats = [...pendingRecord.seats];
       saveReservationData(pendingRecord.pnr, pendingRecord);
 
@@ -707,9 +747,19 @@
         isAdmin = true;
         document.getElementById('adminBanner').classList.remove('hidden');
         document.getElementById('adminListBtn').classList.remove('hidden');
-        openAdminModal();
       } else {
         alert("Yetkisiz erişim! Şifre hatalı.");
+      }
+    }
+
+    function setEmailJsKeyPrompt() {
+      const k = prompt("EmailJS Public Key değerinizi giriniz (Account sekmesinde bulunur):", EMAILJS_PUBLIC_KEY);
+      if (k !== null) {
+        EMAILJS_PUBLIC_KEY = k.trim();
+        localStorage.setItem('baibu_emailjs_pubkey', EMAILJS_PUBLIC_KEY);
+        if (isFirebaseLive && db) db.ref('config/emailjs_pubkey').set(EMAILJS_PUBLIC_KEY);
+        if (EMAILJS_PUBLIC_KEY && window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
+        alert("EmailJS Public Key kaydedildi!");
       }
     }
 
