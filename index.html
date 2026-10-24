@@ -10,6 +10,8 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .seat { touch-action: manipulation; user-select: none; transition: all 0.15s ease; }
@@ -20,11 +22,10 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col pb-10 overflow-x-hidden">
 
-  <!-- Üst Bar (Header) -->
+  <!-- Üst Bar -->
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 min-w-0">
-        <!-- GİZLİ ADMİN TETİKLEYİCİSİ: Bu koltuk ikonuna 5 kez üst üste tıklayınca şifre sorar -->
         <div id="secretLogo" onclick="handleSecretTap()" class="p-1.5 bg-indigo-800 rounded-lg shrink-0 cursor-pointer select-none" title="Yönetici Girişi İçin 5 Kez Tıklayın">
           <i data-lucide="armchair" class="w-5 h-5 text-amber-400"></i>
         </div>
@@ -35,13 +36,11 @@
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
-        <!-- Bilet Sorgulama -->
         <button onclick="checkMyTicket()" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-700">
           <i data-lucide="search" class="w-3.5 h-3.5"></i>
           <span>Biletimi Sorgula</span>
         </button>
 
-        <!-- Gizli Kayıtlar Butonu (Admin girişi yapılınca görünür) -->
         <button id="adminListBtn" onclick="openAdminModal()" class="hidden flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
           <span>Kayıtlar (<span id="resCountBadge">0</span>)</span>
@@ -50,9 +49,9 @@
     </div>
   </header>
 
-  <!-- Yönetici Paneli Aktif Olduğunda Çıkan Üst Bant -->
+  <!-- Yönetici Paneli Üst Bant -->
   <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-inner">
-    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak <span class="text-amber-900 underline">Protokol (Sari)</span> yapabilir, dolu koltuğa tıklayarak detay görebilirsiniz.</span>
+    <span>⚙️ YÖNETİCİ MODU AKTİF: Boş koltuğa tıklayarak Protokol (Sarı) yapabilir, dolu koltuğa tıklayarak detay görebilirsiniz.</span>
     <div class="flex items-center gap-1.5 ml-auto">
       <button onclick="openAdminModal()" class="bg-indigo-950 text-white px-2.5 py-1 rounded text-[11px]">Kayıt Listesini Aç</button>
       <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış Yap</button>
@@ -62,10 +61,8 @@
   <!-- Ana İçerik -->
   <main class="max-w-7xl mx-auto p-2 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-    <!-- SOL: SALON PLANI (8 Kolon) -->
+    <!-- SOL: SALON PLANI -->
     <div class="lg:col-span-8 bg-white p-2.5 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
-      
-      <!-- Kat ve Görünüm Kontrolleri -->
       <div class="w-full flex flex-col gap-2 mb-3">
         <div class="flex items-center justify-between gap-2 w-full">
           <div class="inline-flex p-1 bg-slate-100 rounded-xl flex-1 sm:flex-none">
@@ -86,7 +83,6 @@
         </div>
       </div>
 
-      <!-- SAHNE -->
       <div class="w-full max-w-md my-1.5 px-2 flex flex-col items-center">
         <div class="w-full h-7 bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 rounded-t-2xl flex items-center justify-center text-white text-[11px] font-extrabold tracking-[0.25em] border-b-2 border-amber-400 shadow-sm">
           SAHNE
@@ -94,12 +90,10 @@
         <span class="text-[10px] text-slate-400 mt-0.5">Ön Sıralar (A Sırası)</span>
       </div>
 
-      <!-- KOLTUK DİZİLİM ALANI -->
       <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1 flex justify-center">
         <div id="seatContainer" class="flex flex-col gap-1 items-center w-full"></div>
       </div>
 
-      <!-- Lejant (Renk Açıklamaları) -->
       <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block shadow-inner"></span> Boş (<b id="statEmpty">0</b>)</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block shadow-inner"></span> Seçili</span>
@@ -108,7 +102,7 @@
       </div>
     </div>
 
-    <!-- SAĞ: KAYIT FORMU (4 Kolon) -->
+    <!-- SAĞ: KAYIT FORMU -->
     <div id="formSection" class="lg:col-span-4 flex flex-col gap-3">
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
@@ -124,19 +118,39 @@
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
         </div>
 
-        <form id="resForm" onsubmit="submitReservation(event)" class="hidden space-y-3 mt-3">
+        <form id="resForm" onsubmit="prepareReservation(event)" class="hidden space-y-3 mt-3">
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="check-circle" class="w-4 h-4"></i>
-            <span>Rezervasyonu Tamamla</span>
+            <i data-lucide="mail-check" class="w-4 h-4"></i>
+            <span>E-posta Doğrulama Kodu Gönder</span>
           </button>
-          <p class="text-[10px] text-slate-400 text-center">Aynı telefon ve e-posta ile tek kayıt yapılabilir.</p>
+          <p class="text-[10px] text-slate-400 text-center">E-postanıza 6 haneli doğrulama kodu gönderilecektir.</p>
         </form>
       </div>
     </div>
 
   </main>
+
+  <!-- OTP (E-Posta Doğrulama Kodu) Modalı -->
+  <div id="otpModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
+      <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2">
+        <i data-lucide="mail-open" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900">E-Posta Doğrulaması</h3>
+      <p class="text-xs text-slate-500 mt-0.5"><strong id="otpTargetEmail" class="text-indigo-600"></strong> adresine gönderilen 6 haneli doğrulama kodunu giriniz.</p>
+      
+      <div class="w-full my-4">
+        <input type="text" id="otpInputCode" maxlength="6" placeholder="Örn: 482910" class="w-full text-center tracking-widest text-lg font-mono p-3 rounded-xl border-2 border-indigo-300 bg-slate-50 focus:outline-none focus:border-indigo-600">
+      </div>
+
+      <div class="flex gap-2 w-full">
+        <button onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
+        <button onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Bilet Onay Modalı -->
   <div id="ticketModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
@@ -145,7 +159,7 @@
         <i data-lucide="check-check" class="w-6 h-6"></i>
       </div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">Lütfen giriş için PNR kodunuzu not ediniz.</p>
+      <p class="text-xs text-slate-500 mt-0.5">E-postanız doğrulandı ve kayıt başarıyla tamamlandı.</p>
       
       <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
@@ -198,6 +212,9 @@
   </div>
 
   <script>
+    // =========================================================================
+    // 1. FIREBASE VE EMAILJS AYARLARI
+    // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
       authDomain: "baibu-mavi-salon.firebaseapp.com",
@@ -209,6 +226,11 @@
       measurementId: "G-S77RDCE982"
     };
 
+    // EmailJS Bilgileriniz Entegre Edildi
+    const EMAILJS_SERVICE_ID = "service_oev4nmh";  [cite: 4]
+    const EMAILJS_TEMPLATE_ID = "template_v2mxl5w";[cite: 11]
+    const EMAILJS_PUBLIC_KEY = ""; // İsteğe bağlı olarak hesabınızdaki public key'i buraya yazabilirsiniz
+
     let db = null;
     let isFirebaseLive = false;
 
@@ -216,8 +238,9 @@
       firebase.initializeApp(firebaseConfig);
       db = firebase.database();
       isFirebaseLive = true;
+      if (EMAILJS_PUBLIC_KEY) emailjs.init(EMAILJS_PUBLIC_KEY);
     } catch (e) {
-      console.warn("Yerel depolama aktif:", e);
+      console.warn("Başlatma uyarısı:", e);
     }
 
     const altPlan = [
@@ -239,6 +262,9 @@
     let protocols = {};
     let isAdmin = false;
     let formDraft = {};
+
+    let generatedOtp = "";
+    let pendingRecord = null;
 
     let secretTapCount = 0;
     let secretTapTimer = null;
@@ -433,7 +459,6 @@
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
-      // YÖNETİCİ MODUNDAYKEN PROTOKOL (SARI) VEYA DETAY/SİLME İŞLEMİ YAPILIR
       if (isAdmin) {
         if (occupiedMap[sId]) {
           const r = occupiedMap[sId];
@@ -454,7 +479,6 @@
         return;
       }
 
-      // NORMAL KULLANICI İÇİN:
       if (protocols[sId]) {
         alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
         return;
@@ -545,7 +569,7 @@
       });
     }
 
-    function submitReservation(e) {
+    async function prepareReservation(e) {
       e.preventDefault();
       if (selectedSeats.length === 0) return;
 
@@ -569,26 +593,65 @@
         });
       }
 
-      const bookedSeats = [...selectedSeats];
-      const record = {
+      pendingRecord = {
         pnr: pnr,
         primaryName: `${guests[0].name} ${guests[0].surname}`,
         phone: phone,
         email: email,
-        seats: bookedSeats,
+        seats: [...selectedSeats],
         guests: guests,
         date: new Date().toLocaleString('tr-TR')
       };
 
-      selectedSeats = [];
-      formDraft = {};
+      generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-      saveReservationData(pnr, record);
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = "Kod Gönderiliyor...";
 
-      document.getElementById('tPnr').innerText = pnr;
-      document.getElementById('tName').innerText = record.primaryName;
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: email,
+          to_name: pendingRecord.primaryName,
+          otp_code: generatedOtp
+        });
+
+        document.getElementById('otpTargetEmail').innerText = email;
+        document.getElementById('otpModal').classList.remove('hidden');
+      } catch (err) {
+        alert("E-posta gönderilemedi! Hata: " + JSON.stringify(err));
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="mail-check" class="w-4 h-4"></i> <span>E-posta Doğrulama Kodu Gönder</span>`;
+      }
+    }
+
+    function verifyOtpAndSave() {
+      const userCode = document.getElementById('otpInputCode').value.trim();
+      if (userCode !== generatedOtp) {
+        alert("Hatalı doğrulama kodu! Lütfen e-postanıza gelen 6 haneli kodu doğru yazın.");
+        return;
+      }
+
+      document.getElementById('otpModal').classList.add('hidden');
+      document.getElementById('otpInputCode').value = "";
+
+      const bookedSeats = [...pendingRecord.seats];
+      saveReservationData(pendingRecord.pnr, pendingRecord);
+
+      document.getElementById('tPnr').innerText = pendingRecord.pnr;
+      document.getElementById('tName').innerText = pendingRecord.primaryName;
       document.getElementById('tSeats').innerText = bookedSeats.join(', ');
       document.getElementById('ticketModal').classList.remove('hidden');
+
+      selectedSeats = [];
+      formDraft = {};
+      pendingRecord = null;
+    }
+
+    function cancelOtp() {
+      document.getElementById('otpModal').classList.add('hidden');
+      pendingRecord = null;
     }
 
     function closeTicketModal() {
