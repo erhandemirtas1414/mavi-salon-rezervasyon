@@ -9,7 +9,7 @@
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .seat { touch-action: manipulation; user-select: none; transition: transform 0.1s ease, background-color 0.15s ease; }
     .seat:active { transform: scale(0.85); }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
   </style>
 </head>
@@ -45,7 +45,7 @@
   <main class="max-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
     <!-- SOL: SALON PLANI -->
-    <div class="lg:col-span-8 bg-white p-2 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
+    <div class="lg:col-span-8 bg-white p-2 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
       
       <!-- Kat ve Blok Seçimi -->
       <div class="w-full flex flex-col gap-2 mb-2">
@@ -55,7 +55,7 @@
             <button id="tabBalkon" onclick="switchFloor('balkon')" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600">Balkon (159)</button>
           </div>
 
-          <button id="zoomBtn" onclick="toggleMobileZoom()" class="sm:hidden flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+          <button id="zoomBtn" onclick="toggleMobileZoom()" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
             <span id="zoomBtnText">🔍 Büyüt</span>
           </button>
         </div>
@@ -68,19 +68,20 @@
       </div>
 
       <!-- SAHNE VE KOLTUK SARMALAYICI -->
-      <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1 flex flex-col items-center">
-        
-        <!-- SAHNE -->
-        <div id="stageWrapper" class="w-full max-w-md mb-2 px-1 flex flex-col items-center shrink-0">
-          <div class="w-full h-8 bg-gradient-to-r from-indigo-950 via-indigo-800 to-indigo-950 rounded-t-2xl flex items-center justify-center text-amber-400 text-xs sm:text-sm font-extrabold tracking-[0.35em] border-b-2 border-amber-400 shadow-md">
-            SAHNE
+      <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1">
+        <div id="seatInnerWrap" class="w-full flex flex-col items-center">
+          <!-- SAHNE -->
+          <div id="stageWrapper" class="w-full max-w-md mb-2 px-1 flex flex-col items-center">
+            <div class="w-full h-8 bg-gradient-to-r from-indigo-950 via-indigo-800 to-indigo-950 rounded-t-2xl flex items-center justify-center text-amber-400 text-xs sm:text-sm font-extrabold tracking-[0.35em] border-b-2 border-amber-400 shadow-md">
+              SAHNE
+            </div>
+            <div class="w-11/12 h-1.5 bg-amber-400/20 rounded-b-full mb-0.5"></div>
+            <span class="text-[10px] font-semibold text-slate-400">Ön Sıralar (A Sırası)</span>
           </div>
-          <div class="w-11/12 h-1.5 bg-amber-400/20 rounded-b-full mb-0.5"></div>
-          <span class="text-[10px] font-semibold text-slate-400">Ön Sıralar (A Sırası)</span>
-        </div>
 
-        <!-- KOLTUK DİZİLİM ALANI -->
-        <div id="seatContainer" class="flex flex-col gap-[3px] sm:gap-1 items-center w-full"></div>
+          <!-- KOLTUK DİZİLİM ALANI -->
+          <div id="seatContainer" class="flex flex-col gap-[3px] sm:gap-1.5 w-full"></div>
+        </div>
       </div>
 
       <!-- Renk Açıklamaları -->
@@ -152,7 +153,7 @@
   </div>
 
   <script>
-    // Görseldeki Dağıtım Kimliğine göre ayarlanmış Google Apps Script Web App URL'si:
+    // Google Apps Script Web App URL'niz:
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJkf90NQ0LiqhI69DYBiI2sqliUO4_ztn0EZG__B5T8aqhHcv8ReXnBRyOjk5hJxMW/exec";
 
     const altPlan = [
@@ -168,7 +169,7 @@
 
     let currentFloor = 'alt';
     let currentWing = 'all';
-    let mobileFitMode = true;
+    let fitMode = true; // Varsayılan olarak hem mobil hem masaüstünde ekrana tam sığdırır
     let selectedSeats = [];
     let occupiedSeats = [];
     let formDraft = {};
@@ -195,27 +196,28 @@
 
     function renderGrid() {
       const container = document.getElementById('seatContainer');
-      const stageWrap = document.getElementById('stageWrapper');
+      const innerWrap = document.getElementById('seatInnerWrap');
       if (!container) return;
       container.innerHTML = '';
 
       const cfg = currentFloor === 'alt' ? altPlan : balkonPlan;
-      const fitToMobile = (currentWing === 'all' && mobileFitMode);
+      const isFit = (currentWing === 'all' && fitMode);
 
-      stageWrap.className = fitToMobile
-        ? 'w-full max-w-md mb-2 px-1 flex flex-col items-center shrink-0'
-        : 'w-full min-w-[680px] max-w-xl mb-2 px-1 flex flex-col items-center shrink-0';
+      // Büyütme modunda sol tarafın kesilmesini önlemek için w-max mx-auto kullanılır
+      innerWrap.className = isFit
+        ? 'w-full flex flex-col items-center'
+        : 'w-max mx-auto flex flex-col items-center px-2';
 
       cfg.forEach(row => {
         const rowWrap = document.createElement('div');
-        rowWrap.className = fitToMobile
-          ? 'flex items-center justify-center gap-[1.5px] sm:gap-1 w-full px-0.5'
-          : 'flex items-center justify-center gap-1 min-w-max px-2';
+        rowWrap.className = isFit
+          ? 'flex items-center justify-center gap-[1.5px] sm:gap-[3px] w-full'
+          : 'flex items-center justify-center gap-1 sm:gap-1.5 w-max';
 
         const lblL = document.createElement('div');
-        lblL.className = fitToMobile
-          ? 'w-3.5 sm:w-6 text-center text-[7px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0'
-          : 'w-6 text-center text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0';
+        lblL.className = isFit
+          ? 'w-4 sm:w-6 text-center text-[7px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0'
+          : 'w-6 text-center text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-1 shrink-0';
         lblL.innerText = row.r;
         rowWrap.appendChild(lblL);
 
@@ -227,7 +229,7 @@
 
           if (currentWing === 'all' && i === mid + 1) {
             const aisle = document.createElement('div');
-            aisle.className = fitToMobile ? 'w-1 sm:w-4 shrink-0' : 'w-4 shrink-0';
+            aisle.className = isFit ? 'w-1 sm:w-3 shrink-0' : 'w-4 shrink-0';
             rowWrap.appendChild(aisle);
           }
 
@@ -236,9 +238,10 @@
           btn.type = 'button';
           btn.dataset.seatId = seatId;
 
-          btn.className = fitToMobile
-            ? 'seat flex-1 min-w-0 max-w-[26px] h-5 sm:w-7 sm:h-7 rounded-[3px] sm:rounded-md text-[7px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600'
-            : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
+          // isFit aktifken shrink-0 ve sabit genişlik kaldırıldı, tüm koltuklar satıra %100 sığar
+          btn.className = isFit
+            ? 'seat flex-1 min-w-0 max-w-[28px] h-5 sm:h-7 rounded-[3px] sm:rounded-md text-[7px] sm:text-[10px] font-bold flex items-center justify-center border bg-emerald-500 text-white border-emerald-600'
+            : 'seat w-7 h-7 sm:w-8 sm:h-8 rounded-md text-[10px] sm:text-xs font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
 
           btn.innerText = i;
           btn.onclick = () => onSeatClick(seatId);
@@ -295,8 +298,8 @@
 
     function toggleMobileZoom() {
       saveCurrentFormDraft();
-      mobileFitMode = !mobileFitMode;
-      document.getElementById('zoomBtnText').innerText = mobileFitMode ? '🔍 Büyüt' : '📱 Ekrana Sığdır';
+      fitMode = !fitMode;
+      document.getElementById('zoomBtnText').innerText = fitMode ? '🔍 Büyüt' : '📱 Ekrana Sığdır';
       renderGrid();
     }
 
