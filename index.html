@@ -6,9 +6,6 @@
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .seat { touch-action: manipulation; user-select: none; transition: transform 0.1s ease, background-color 0.15s ease; }
@@ -23,8 +20,7 @@
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 min-w-0">
-        <!-- GİZLİ ADMİN TETİKLEYİCİSİ: 5 kez tıklayın -->
-        <div id="secretLogo" onclick="handleSecretTap()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-xl shrink-0 cursor-pointer select-none shadow-inner" title="Yönetici Girişi İçin 5 Kez Tıklayın">
+        <div class="p-2 bg-indigo-800 rounded-xl shrink-0 select-none shadow-inner">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/>
             <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/>
@@ -42,25 +38,9 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <span>Biletimi Sorgula</span>
         </button>
-
-        <button id="adminListBtn" onclick="openAdminModal()" class="hidden items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
-          <span>📋 Kayıtlar (<span id="resCountBadge">0</span>)</span>
-        </button>
       </div>
     </div>
   </header>
-
-  <!-- Yönetici Paneli Üst Bant -->
-  <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex-wrap items-center justify-between gap-2 shadow-inner">
-    <div class="flex items-center gap-2 flex-wrap">
-      <span>⚙️ YÖNETİCİ MODU:</span>
-      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil/Sarı koltuğa tıklayarak Protokol yapabilirsiniz.</span>
-    </div>
-    <div class="flex items-center gap-1.5 ml-auto">
-      <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">📋 Kayıt Listesi</button>
-      <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış</button>
-    </div>
-  </div>
 
   <!-- Ana İçerik -->
   <main class="max-w-7xl mx-auto p-2 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -101,10 +81,9 @@
 
       <!-- Renk Açıklamaları -->
       <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş (<b id="statEmpty">514</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block"></span> Seçili</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu (<b id="statFull">0</b>)</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-400 inline-block"></span> Protokol (<b id="statProto">0</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu</span>
       </div>
     </div>
 
@@ -116,25 +95,16 @@
           <span id="seatBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0/4 Seçildi</span>
         </div>
 
-        <!-- Cihazdan Daha Önce Kayıt Yapıldıysa -->
-        <div id="deviceLockedBox" class="hidden py-6 px-3 text-center bg-emerald-50 border border-emerald-200 rounded-xl my-3">
-          <div class="text-2xl mb-1">✅</div>
-          <h3 class="text-xs font-bold text-emerald-900">Bu Cihazdan Rezervasyon Yapılmıştır</h3>
-          <p class="text-[11px] text-emerald-700 mt-1">Kayıtlı PNR Kodunuz: <strong id="lockedPnrText" class="font-mono"></strong></p>
-          <button type="button" onclick="showMyLockedTicket()" class="mt-3 px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold">Biletimi Göster</button>
-        </div>
-
         <div id="emptyHint" class="py-10 text-center text-slate-400 text-xs">
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
         </div>
 
-        <form id="resForm" onsubmit="submitReservationDirect(event)" class="hidden space-y-3 mt-3">
+        <form id="resForm" onsubmit="submitReservation(event)" class="hidden space-y-3 mt-3">
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
-          <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
             <span>Rezervasyonu Tamamla</span>
           </button>
-          <p class="text-[10px] text-slate-400 text-center">Her cihaz yalnızca tek bir rezervasyon oluşturabilir.</p>
         </form>
       </div>
     </div>
@@ -146,7 +116,7 @@
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
       <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 text-xl">✅</div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">Kaydınız başarıyla tamamlandı. Lütfen PNR kodunuzu saklayınız.</p>
+      <p class="text-xs text-slate-500 mt-0.5">Kaydınız başarıyla tamamlandı.</p>
       
       <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
@@ -158,43 +128,10 @@
     </div>
   </div>
 
-  <!-- YÖNETİCİ KAYIT LİSTESİ MODALI -->
-  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white w-full max-w-4xl max-h-[88vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
-      <div class="p-3 bg-slate-900 text-white flex justify-between items-center text-xs">
-        <span class="font-bold">🛡️ Yönetici Paneli - Kayıtlı Katılımcı Listesi</span>
-        <button type="button" onclick="closeAdminModal()" class="px-2 py-1 hover:bg-slate-800 rounded font-bold">✕ Kapat</button>
-      </div>
-      <div class="p-2.5 bg-slate-50 border-b flex flex-wrap justify-between items-center gap-2 text-xs">
-        <div class="flex items-center gap-2">
-          <span id="adminStatText" class="font-bold text-slate-700">0 Kayıt</span>
-          <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="İsim, PNR veya koltuk ara..." class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs bg-white">
-        </div>
-        <div class="flex gap-1.5">
-          <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
-          <button type="button" onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1.5 rounded-lg font-bold">Tümünü Sıfırla</button>
-        </div>
-      </div>
-      <div class="flex-1 overflow-y-auto p-2 sm:p-3">
-        <table class="w-full text-left text-[11px] border-collapse">
-          <thead class="bg-slate-100 text-slate-600 sticky top-0">
-            <tr>
-              <th class="p-2">PNR</th>
-              <th class="p-2">Asıl Kayıt Sahibi</th>
-              <th class="p-2">Telefon & E-Posta</th>
-              <th class="p-2">Koltuklar</th>
-              <th class="p-2">Misafir Detayları</th>
-              <th class="p-2">Tarih</th>
-              <th class="p-2 text-right">İşlem</th>
-            </tr>
-          </thead>
-          <tbody id="adminTbody" class="divide-y divide-slate-100"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <script>
+    // BURAYA Google Apps Script Web App URL'nizi yapıştırın:
+    const SCRIPT_URL = "BURAYA_GOOGLE_APPS_SCRIPT_WEB_APP_URL_YAZILACAK";
+
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
       { r: 'E', n: 25 }, { r: 'F', n: 26 }, { r: 'G', n: 26 }, { r: 'H', n: 26 },
@@ -210,120 +147,24 @@
     let currentWing = 'all';
     let mobileFitMode = true;
     let selectedSeats = [];
-    let reservations = {};
-    let protocols = {};
-    let isAdmin = false;
-    let formDraft = {};
-
-    let secretTapCount = 0;
-    let secretTapTimer = null;
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
-      authDomain: "baibu-mavi-salon.firebaseapp.com",
-      databaseURL: "https://baibu-mavi-salon-default-rtdb.firebaseio.com",
-      projectId: "baibu-mavi-salon",
-      storageBucket: "baibu-mavi-salon.firebasestorage.app",
-      messagingSenderId: "502256070432",
-      appId: "1:502256070432:web:fb7d95759d6b907395f145",
-      measurementId: "G-S77RDCE982"
-    };
-
-    let db = null;
-    let isFirebaseLive = false;
+    let occupiedSeats = []; // Apps Script'ten çekilecek dolu koltuklar listesi
 
     function initApp() {
       renderGrid();
+      fetchOccupiedSeats();
+    }
 
+    async function fetchOccupiedSeats() {
       try {
-        const localRes = localStorage.getItem('baibu_mavi_res_v2');
-        const localProto = localStorage.getItem('baibu_mavi_proto_v2');
-        if (localRes) reservations = JSON.parse(localRes);
-        if (localProto) protocols = JSON.parse(localProto);
-        refreshUI();
-      } catch (e) {
-        console.warn("Yerel veri okuma uyarısı:", e);
-      }
-
-      try {
-        if (typeof firebase !== 'undefined') {
-          if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-          }
-          db = firebase.database();
-          isFirebaseLive = true;
-
-          db.ref('reservations').on('value', snap => {
-            reservations = snap.val() || {};
-            localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-            refreshUI();
-          });
-          db.ref('protocols').on('value', snap => {
-            protocols = snap.val() || {};
-            localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
-            refreshUI();
-          });
+        const response = await fetch(SCRIPT_URL + "?action=getOccupied");
+        const data = await response.json();
+        if (data && data.occupied) {
+          occupiedSeats = data.occupied;
+          refreshUI();
         }
       } catch (e) {
-        console.warn("Firebase bağlantı uyarısı:", e);
+        console.warn("Dolu koltuklar yüklenemedi:", e);
       }
-
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('yonetim') || params.has('admin')) {
-        setTimeout(() => promptAdminLogin(), 300);
-      }
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
-
-    function getDeviceLockedPnr() {
-      if (isAdmin) return null;
-      const myPnr = localStorage.getItem('baibu_device_pnr');
-      if (myPnr && reservations && reservations[myPnr]) {
-        return myPnr;
-      }
-      if (myPnr && reservations && Object.keys(reservations).length > 0 && !reservations[myPnr]) {
-        localStorage.removeItem('baibu_device_pnr');
-      }
-      return null;
-    }
-
-    function validateRealPhoneAndEmail(phone, email) {
-      let cleanPhone = phone.replace(/\D/g, '');
-      if (cleanPhone.length === 10 && cleanPhone.startsWith('5')) {
-        cleanPhone = '0' + cleanPhone;
-      }
-      const trPhoneRegex = /^05(0[1567]|3[0-9]|4[0-9]|5[1-9]|61)[0-9]{7}$/;
-      if (!trPhoneRegex.test(cleanPhone)) {
-        return { valid: false, msg: "Lütfen geçerli bir Türkiye cep telefonu numarası giriniz (Örn: 0532XXXXXXX)." };
-      }
-
-      const subscriberPart = cleanPhone.substring(4);
-      if (/^(\d)\1{6}$/.test(subscriberPart) || subscriberPart === "1234567" || subscriberPart === "7654321") {
-        return { valid: false, msg: "Girilen telefon numarası geçersiz veya rastgele tuşlanmış görünüyor!" };
-      }
-
-      const emailParts = email.split('@');
-      if (emailParts.length !== 2 || emailParts[0].length < 3) {
-        return { valid: false, msg: "Lütfen geçerli bir e-posta adresi giriniz." };
-      }
-      const localPart = emailParts[0];
-      const domainPart = emailParts[1];
-
-      if (/^(.)\1{3,}$/.test(localPart) || ["asdf", "qwer", "1234", "test", "deneme", "aaaa"].includes(localPart)) {
-        return { valid: false, msg: "Lütfen gerçek ve aktif kullandığınız e-posta adresinizi giriniz." };
-      }
-
-      const fakeDomains = ["tempmail.com", "10minutemail.com", "guerrillamail.com", "yopmail.com", "mailinator.com", "test.com", "example.com", "asdf.com", "gmal.com", "gnail.com", "hotmal.com"];
-      if (fakeDomains.includes(domainPart) || !domainPart.includes('.')) {
-        return { valid: false, msg: "E-posta uzantısı hatalı veya geçersiz! (@gmail.com, @ibu.edu.tr, @hotmail.com vb. kontrol ediniz)." };
-      }
-
-      return { valid: true, cleanPhone: cleanPhone };
     }
 
     function renderGrid() {
@@ -341,9 +182,7 @@
           : 'flex items-center justify-center gap-1 min-w-max px-1';
 
         const lblL = document.createElement('div');
-        lblL.className = fitToMobile
-          ? 'w-4 sm:w-6 text-center text-[8px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0'
-          : 'w-6 text-center text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0';
+        lblL.className = 'w-4 sm:w-6 text-center text-[8px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0';
         lblL.innerText = row.r;
         rowWrap.appendChild(lblL);
 
@@ -363,11 +202,7 @@
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.dataset.seatId = seatId;
-
-          btn.className = fitToMobile
-            ? 'seat flex-1 max-w-[26px] h-6 sm:w-7 sm:h-7 rounded-[4px] sm:rounded-md text-[8px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600'
-            : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
-
+          btn.className = 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
           btn.innerText = i;
           btn.onclick = () => onSeatClick(seatId);
           rowWrap.appendChild(btn);
@@ -384,67 +219,26 @@
       refreshUI();
     }
 
-    function getOccupiedSeatMap() {
-      const map = {};
-      Object.values(reservations || {}).forEach(r => {
-        if (r && Array.isArray(r.seats)) {
-          r.seats.forEach(s => { map[s] = r; });
-        }
-      });
-      return map;
-    }
-
     function refreshUI() {
-      const occupiedMap = getOccupiedSeatMap();
-
-      if (selectedSeats.length > 0) {
-        const newlyTaken = selectedSeats.filter(s => occupiedMap[s] || (protocols && protocols[s]));
-        if (newlyTaken.length > 0) {
-          saveCurrentFormDraft();
-          selectedSeats = selectedSeats.filter(s => !occupiedMap[s] && !(protocols && protocols[s]));
-        }
-      }
-
       document.querySelectorAll('.seat').forEach(btn => {
         const sId = btn.dataset.seatId;
-        btn.classList.remove(
-          'bg-emerald-500', 'border-emerald-600',
-          'bg-rose-600', 'border-rose-700',
-          'bg-amber-400', 'border-amber-500',
-          'bg-indigo-600', 'border-indigo-800',
-          'text-white', 'text-slate-950', 'ring-2', 'ring-indigo-300'
-        );
+        btn.classList.remove('bg-emerald-500', 'border-emerald-600', 'bg-rose-600', 'border-rose-700', 'bg-indigo-600', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
 
         if (selectedSeats.includes(sId)) {
           btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
-        } else if (occupiedMap[sId]) {
+        } else if (occupiedSeats.includes(sId)) {
           btn.classList.add('bg-rose-600', 'text-white', 'border-rose-700');
-        } else if (protocols && protocols[sId]) {
-          btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-500');
         } else {
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
         }
       });
-
-      const totalSeats = 514;
-      const fullCount = Object.keys(occupiedMap).length;
-      const protoCount = Object.keys(protocols || {}).length;
-      document.getElementById('statFull').innerText = fullCount;
-      document.getElementById('statProto').innerText = protoCount;
-      document.getElementById('statEmpty').innerText = Math.max(0, totalSeats - fullCount - protoCount);
-      document.getElementById('resCountBadge').innerText = Object.keys(reservations || {}).length;
-
       updateForm();
     }
 
     function switchFloor(fl) {
       currentFloor = fl;
-      document.getElementById('tabAlt').className = fl === 'alt'
-        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
-      document.getElementById('tabBalkon').className = fl === 'balkon'
-        ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow'
-        : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
+      document.getElementById('tabAlt').className = fl === 'alt' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
+      document.getElementById('tabBalkon').className = fl === 'balkon' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
       renderGrid();
     }
 
@@ -452,9 +246,7 @@
       currentWing = wing;
       ['all', 'left', 'right'].forEach(w => {
         const btn = document.getElementById('wing' + w.charAt(0).toUpperCase() + w.slice(1));
-        btn.className = (w === wing)
-          ? 'flex-1 py-1 font-bold rounded-lg bg-white shadow-sm text-indigo-700'
-          : 'flex-1 py-1 text-slate-600 font-medium rounded-lg';
+        btn.className = (w === wing) ? 'flex-1 py-1 font-bold rounded-lg bg-white shadow-sm text-indigo-700' : 'flex-1 py-1 text-slate-600 font-medium rounded-lg';
       });
       renderGrid();
     }
@@ -466,45 +258,10 @@
     }
 
     function onSeatClick(sId) {
-      const occupiedMap = getOccupiedSeatMap();
-
-      if (isAdmin) {
-        if (occupiedMap[sId]) {
-          const r = occupiedMap[sId];
-          const guestObj = (r.guests || []).find(g => g.seat === sId);
-          const guestName = guestObj ? `${guestObj.name} ${guestObj.surname}` : r.primaryName;
-          const delConfirm = confirm(
-            `📌 DOLU KOLTUK BİLGİSİ (${sId})\n\n` +
-            `Oturan: ${guestName}\n` +
-            `Kayıt Sahibi: ${r.primaryName}\n` +
-            `Telefon: ${r.phone}\n` +
-            `PNR: ${r.pnr}\n\n` +
-            `Bu rezervasyonu İPTAL EDİP koltuğu boşaltmak ister misiniz?`
-          );
-          if (delConfirm) deleteRes(r.pnr);
-          return;
-        }
-        toggleProtocolSeat(sId);
-        return;
-      }
-
-      const lockedPnr = getDeviceLockedPnr();
-      if (lockedPnr) {
-        alert(`Bu cihazdan zaten bir rezervasyon yapılmıştır (PNR: ${lockedPnr}). Her katılımcı yalnızca tek bir kayıt oluşturabilir.`);
-        return;
-      }
-
-      if (protocols && protocols[sId]) {
-        alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
-        return;
-      }
-
-      if (occupiedMap[sId]) {
+      if (occupiedSeats.includes(sId)) {
         alert("Bu koltuk doludur.");
         return;
       }
-
-      saveCurrentFormDraft();
 
       if (selectedSeats.includes(sId)) {
         selectedSeats = selectedSeats.filter(s => s !== sId);
@@ -515,88 +272,16 @@
         }
         selectedSeats.push(sId);
       }
-
       refreshUI();
-    }
-
-    async function checkSeatConflictLive(seatsToCheck) {
-      if (isFirebaseLive && db) {
-        try {
-          const [resSnap, protoSnap] = await Promise.all([
-            db.ref('reservations').get(),
-            db.ref('protocols').get()
-          ]);
-          reservations = resSnap.val() || {};
-          protocols = protoSnap.val() || {};
-        } catch (err) {
-          console.warn("Canlı kontrol uyarısı:", err);
-        }
-      }
-
-      const occupiedMap = getOccupiedSeatMap();
-      return seatsToCheck.filter(s => occupiedMap[s] || (protocols && protocols[s]));
-    }
-
-    function saveReservationData(pnr, record) {
-      reservations[pnr] = record;
-      localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-      if (!isAdmin) {
-        localStorage.setItem('baibu_device_pnr', pnr);
-      }
-      refreshUI();
-
-      if (isFirebaseLive && db) {
-        db.ref('reservations/' + pnr).set(record).catch(err => console.warn(err));
-      }
-    }
-
-    function toggleProtocolSeat(seatId) {
-      if (protocols[seatId]) {
-        delete protocols[seatId];
-      } else {
-        protocols[seatId] = true;
-      }
-      selectedSeats = selectedSeats.filter(s => s !== seatId);
-      localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
-      refreshUI();
-
-      if (isFirebaseLive && db) {
-        if (protocols[seatId]) db.ref('protocols/' + seatId).set(true);
-        else db.ref('protocols/' + seatId).remove();
-      }
-    }
-
-    function saveCurrentFormDraft() {
-      selectedSeats.forEach((seat, idx) => {
-        const n = document.getElementById(`name_${idx}`);
-        const s = document.getElementById(`surname_${idx}`);
-        if (n && s) formDraft[seat] = { name: n.value, surname: s.value };
-      });
-      const ph = document.getElementById('primary_phone');
-      const em = document.getElementById('primary_email');
-      if (ph) formDraft._phone = ph.value;
-      if (em) formDraft._email = em.value;
     }
 
     function updateForm() {
       const form = document.getElementById('resForm');
       const hint = document.getElementById('emptyHint');
-      const lockedBox = document.getElementById('deviceLockedBox');
       const container = document.getElementById('formFields');
       const badge = document.getElementById('seatBadge');
 
       badge.innerText = `${selectedSeats.length}/4 Seçildi`;
-
-      const lockedPnr = getDeviceLockedPnr();
-      if (lockedPnr) {
-        form.classList.add('hidden');
-        hint.classList.add('hidden');
-        lockedBox.classList.remove('hidden');
-        document.getElementById('lockedPnrText').innerText = lockedPnr;
-        return;
-      } else {
-        lockedBox.classList.add('hidden');
-      }
 
       if (selectedSeats.length === 0) {
         form.classList.add('hidden');
@@ -610,7 +295,6 @@
 
       selectedSeats.forEach((seat, idx) => {
         const isLead = idx === 0;
-        const draft = formDraft[seat] || { name: '', surname: '' };
         const box = document.createElement('div');
         box.className = `p-2.5 rounded-xl border ${isLead ? 'bg-indigo-50/70 border-indigo-200' : 'bg-slate-50 border-slate-200'}`;
 
@@ -620,111 +304,88 @@
             <button type="button" onclick="onSeatClick('${seat}')" class="text-[10px] text-rose-600 hover:underline">Kaldır</button>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <div>
-              <input type="text" id="name_${idx}" value="${draft.name}" required minlength="2" placeholder="Adınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
-            </div>
-            <div>
-              <input type="text" id="surname_${idx}" value="${draft.surname}" required minlength="2" placeholder="Soyadınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
-            </div>
+            <div><input type="text" id="name_${idx}" required placeholder="Adınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
+            <div><input type="text" id="surname_${idx}" required placeholder="Soyadınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
           </div>
         `;
 
         if (isLead) {
           html += `
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-indigo-100">
-              <input type="tel" id="primary_phone" value="${formDraft._phone || ''}" required placeholder="Cep Tel (05XX...) *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
-              <input type="email" id="primary_email" value="${formDraft._email || ''}" required placeholder="E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
+              <input type="tel" id="primary_phone" required placeholder="Cep Tel (05XX...) *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
+              <input type="email" id="primary_email" required placeholder="E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
             </div>
           `;
         }
-
         box.innerHTML = html;
         container.appendChild(box);
       });
     }
 
-    // DOĞRUDAN KAYIT (MAİL KODU BEKLEMEDEN ANINDA TAMamlama + SAHTE VERİ ENGELLEYİCİ)
-    async function submitReservationDirect(e) {
+    async function submitReservation(e) {
       e.preventDefault();
       if (selectedSeats.length === 0) return;
 
-      if (getDeviceLockedPnr()) {
-        alert("Bu cihazdan zaten bir rezervasyon yapılmıştır!");
-        return;
-      }
+      const guests = selectedSeats.map((seat, i) => ({
+        seat: seat,
+        name: document.getElementById(`name_${i}`).value.trim(),
+        surname: document.getElementById(`surname_${i}`).value.trim()
+      }));
 
-      saveCurrentFormDraft();
-
-      const rawPhone = document.getElementById('primary_phone').value.trim();
-      const email = document.getElementById('primary_email').value.trim().toLowerCase();
-
-      // Sahte Numara ve Mail Kontrolü
-      const checkValid = validateRealPhoneAndEmail(rawPhone, email);
-      if (!checkValid.valid) {
-        alert("⚠️ " + checkValid.msg);
-        return;
-      }
-      const phone = checkValid.cleanPhone;
+      const payload = {
+        primaryName: `${guests[0].name} ${guests[0].surname}`,
+        phone: document.getElementById('primary_phone').value.trim(),
+        email: document.getElementById('primary_email').value.trim(),
+        seats: selectedSeats,
+        guests: guests
+      };
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerText = "Kayıt Yapılıyor...";
+      btn.innerText = "Kaydediliyor...";
 
       try {
-        const takenSeats = await checkSeatConflictLive(selectedSeats);
-        if (takenSeats.length > 0) {
-          selectedSeats = selectedSeats.filter(s => !takenSeats.includes(s));
-          refreshUI();
-          alert(`⚠️ Seçtiğiniz [${takenSeats.join(', ')}] numaralı koltuk(lar) az önce başka biri tarafından alındı! Lütfen başka koltuk seçiniz.`);
-          return;
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById('tPnr').innerText = result.pnr;
+          document.getElementById('tName').innerText = payload.primaryName;
+          document.getElementById('tSeats').innerText = selectedSeats.join(', ');
+          document.getElementById('ticketModal').classList.remove('hidden');
+
+          selectedSeats = [];
+          fetchOccupiedSeats();
+        } else {
+          alert("Hata: " + (result.message || "Kayıt yapılamadı."));
         }
-
-        const isDup = Object.values(reservations).some(r => r && ((r.phone === phone) || (r.email === email)));
-        if (isDup) {
-          alert("Bu telefon numarası veya e-posta adresi ile daha önce kayıt yapılmıştır!");
-          return;
-        }
-
-        const pnr = 'BAIBU-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-        const guests = [];
-
-        for (let i = 0; i < selectedSeats.length; i++) {
-          const seatCode = selectedSeats[i];
-          const draft = formDraft[seatCode] || { name: '', surname: '' };
-          guests.push({
-            seat: seatCode,
-            name: (document.getElementById(`name_${i}`)?.value || draft.name).trim(),
-            surname: (document.getElementById(`surname_${i}`)?.value || draft.surname).trim()
-          });
-        }
-
-        const record = {
-          pnr: pnr,
-          primaryName: `${guests[0].name} ${guests[0].surname}`,
-          phone: phone,
-          email: email,
-          seats: [...selectedSeats],
-          guests: guests,
-          date: new Date().toLocaleString('tr-TR')
-        };
-
-        const bookedSeats = [...selectedSeats];
-        saveReservationData(pnr, record);
-
-        document.getElementById('tPnr').innerText = pnr;
-        document.getElementById('tName').innerText = record.primaryName;
-        document.getElementById('tSeats').innerText = bookedSeats.join(', ');
-        document.getElementById('ticketModal').classList.remove('hidden');
-
-        selectedSeats = [];
-        formDraft = {};
-        refreshUI();
       } catch (err) {
-        console.error("Kayıt hatası:", err);
-        alert("Kayıt sırasında bir hata oluştu.");
+        alert("Bağlantı hatası oluştu.");
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Rezervasyonu Tamamla</span>`;
+        btn.innerText = "Rezervasyonu Tamamla";
+      }
+    }
+
+    async function checkMyTicket() {
+      const pnr = prompt("Sorgulamak istediğiniz PNR kodunu giriniz:");
+      if (!pnr) return;
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=checkPnr&pnr=${encodeURIComponent(pnr.trim().toUpperCase())}`);
+        const data = await res.json();
+        if (data.found) {
+          document.getElementById('tPnr').innerText = data.pnr;
+          document.getElementById('tName').innerText = data.primaryName;
+          document.getElementById('tSeats').innerText = data.seats.join(', ');
+          document.getElementById('ticketModal').classList.remove('hidden');
+        } else {
+          alert("Bu PNR koduna ait kayıt bulunamadı.");
+        }
+      } catch (e) {
+        alert("Sorgulama yapılırken hata oluştu.");
       }
     }
 
@@ -732,169 +393,10 @@
       document.getElementById('ticketModal').classList.add('hidden');
     }
 
-    function showMyLockedTicket() {
-      const pnr = getDeviceLockedPnr();
-      if (pnr && reservations[pnr]) {
-        const r = reservations[pnr];
-        document.getElementById('tPnr').innerText = r.pnr;
-        document.getElementById('tName').innerText = r.primaryName;
-        document.getElementById('tSeats').innerText = (r.seats || []).join(', ');
-        document.getElementById('ticketModal').classList.remove('hidden');
-      }
-    }
-
-    function checkMyTicket() {
-      const code = prompt("Lütfen PNR kodunuzu giriniz (Örn: BAIBU-XXXXX):");
-      if (!code) return;
-      const cleanCode = code.trim().toUpperCase();
-      const r = reservations[cleanCode];
-      if (!r) {
-        alert("Bu PNR koduna ait bir kayıt bulunamadı.");
-        return;
-      }
-      document.getElementById('tPnr').innerText = r.pnr;
-      document.getElementById('tName').innerText = r.primaryName;
-      document.getElementById('tSeats').innerText = (r.seats || []).join(', ');
-      document.getElementById('ticketModal').classList.remove('hidden');
-    }
-
-    function handleSecretTap() {
-      secretTapCount++;
-      clearTimeout(secretTapTimer);
-      if (secretTapCount >= 5) {
-        secretTapCount = 0;
-        promptAdminLogin();
-      } else {
-        secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 1500);
-      }
-    }
-
-    function promptAdminLogin() {
-      if (isAdmin) {
-        openAdminModal();
-        return;
-      }
-      const p = prompt("🔐 Yönetici Şifresini Giriniz:");
-      if (!p) return;
-
-      if (["baibu2026", "admin14", "mavisalon"].includes(p.trim())) {
-        isAdmin = true;
-        const banner = document.getElementById('adminBanner');
-        const listBtn = document.getElementById('adminListBtn');
-        banner.classList.remove('hidden');
-        banner.classList.add('flex');
-        listBtn.classList.remove('hidden');
-        listBtn.classList.add('flex');
-        refreshUI();
-      } else {
-        alert("Yetkisiz erişim! Şifre hatalı.");
-      }
-    }
-
-    function exitAdmin() {
-      isAdmin = false;
-      const banner = document.getElementById('adminBanner');
-      const listBtn = document.getElementById('adminListBtn');
-      banner.classList.add('hidden');
-      banner.classList.remove('flex');
-      listBtn.classList.add('hidden');
-      listBtn.classList.remove('flex');
-      closeAdminModal();
-      refreshUI();
-    }
-
-    function openAdminModal() {
-      if (!isAdmin) return;
-      document.getElementById('adminModal').classList.remove('hidden');
-      renderAdminTable();
-    }
-
-    function renderAdminTable() {
-      const tbody = document.getElementById('adminTbody');
-      const query = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
-      tbody.innerHTML = '';
-
-      const allList = Object.values(reservations || {}).reverse();
-      const filtered = allList.filter(r => {
-        if (!query) return true;
-        const hay = `${r.pnr} ${r.primaryName} ${r.phone} ${r.email} ${(r.seats || []).join(' ')}`.toLowerCase();
-        return hay.includes(query);
-      });
-
-      document.getElementById('adminStatText').innerText = `Toplam ${allList.length} Kayıt (${filtered.length} gösteriliyor)`;
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Kayıt bulunamadı.</td></tr>`;
-        return;
-      }
-
-      filtered.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50';
-        const gList = (r.guests || []).map(g => `${g.name} ${g.surname} (${g.seat})`).join(', ');
-        tr.innerHTML = `
-          <td class="p-2 font-bold font-mono text-indigo-700">${r.pnr}</td>
-          <td class="p-2 font-bold text-slate-900">${r.primaryName}</td>
-          <td class="p-2 text-slate-600">${r.phone}<br><span class="text-[10px] text-slate-400">${r.email}</span></td>
-          <td class="p-2"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">${(r.seats || []).join(', ')}</span></td>
-          <td class="p-2 text-slate-600">${gList}</td>
-          <td class="p-2 text-[10px] text-slate-400">${r.date || '-'}</td>
-          <td class="p-2 text-right">
-            <button type="button" onclick="deleteRes('${r.pnr}')" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded font-bold">Sil</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function closeAdminModal() {
-      document.getElementById('adminModal').classList.add('hidden');
-    }
-
-    function deleteRes(pnr) {
-      if (!isAdmin) return;
-      if (confirm(`${pnr} kodlu rezervasyon silinsin ve koltuklar boşa çıkarılsın mı?`)) {
-        delete reservations[pnr];
-        localStorage.setItem('baibu_mavi_res_v2', JSON.stringify(reservations));
-        if (localStorage.getItem('baibu_device_pnr') === pnr) {
-          localStorage.removeItem('baibu_device_pnr');
-        }
-        if (isFirebaseLive && db) db.ref('reservations/' + pnr).remove();
-        renderAdminTable();
-        refreshUI();
-      }
-    }
-
-    function clearAllData() {
-      if (!isAdmin) return;
-      const code = prompt("TÜM KAYITLARI SİLMEK İÇİN 'SIFIRLA' YAZINIZ:");
-      if (code === "SIFIRLA") {
-        reservations = {};
-        protocols = {};
-        localStorage.removeItem('baibu_mavi_res_v2');
-        localStorage.removeItem('baibu_mavi_proto_v2');
-        localStorage.removeItem('baibu_device_pnr');
-        if (isFirebaseLive && db) {
-          db.ref('reservations').remove();
-          db.ref('protocols').remove();
-        }
-        renderAdminTable();
-        refreshUI();
-      }
-    }
-
-    function exportCSV() {
-      if (!isAdmin) return;
-      let csv = "\uFEFFPNR;Kayıt Sahibi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Tarih\n";
-      Object.values(reservations || {}).forEach(r => {
-        const gText = (r.guests || []).map(g => `${g.name} ${g.surname} (${g.seat})`).join(' | ');
-        csv += `"${r.pnr}";"${r.primaryName}";"${r.phone}";"${r.email}";"${(r.seats || []).join(', ')}";"${gText}";"${r.date}"\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `BAIBU_Mavi_Salon_Kayitlar.csv`;
-      a.click();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
     }
   </script>
 </body>
