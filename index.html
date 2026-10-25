@@ -19,7 +19,8 @@
   <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-40 w-full">
     <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 min-w-0">
-        <div class="p-2 bg-indigo-800 rounded-xl shrink-0 select-none shadow-inner">
+        <!-- GİZLİ ADMİN TETİKLEYİCİSİ: 5 kez tıklayın -->
+        <div id="secretLogo" onclick="handleSecretTap()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-xl shrink-0 cursor-pointer select-none shadow-inner" title="Yönetici Girişi İçin 5 Kez Tıklayın">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/>
             <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/>
@@ -37,9 +38,25 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <span>Biletimi Sorgula</span>
         </button>
+
+        <button id="adminListBtn" onclick="openAdminModal()" class="hidden items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow">
+          <span>📋 Kayıtlar (<span id="resCountBadge">0</span>)</span>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- Yönetici Paneli Üst Bant -->
+  <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex-wrap items-center justify-between gap-2 shadow-inner">
+    <div class="flex items-center gap-2 flex-wrap">
+      <span>⚙️ YÖNETİCİ MODU:</span>
+      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil/Sarı koltuğa tıklayarak Protokol yapabilir, Kırmızı koltuğa tıklayarak kaydı silebilirsiniz.</span>
+    </div>
+    <div class="flex items-center gap-1.5 ml-auto">
+      <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">📋 Kayıt Listesi</button>
+      <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış</button>
+    </div>
+  </div>
 
   <!-- Ana İçerik -->
   <main class="max-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -85,10 +102,11 @@
       </div>
 
       <!-- Renk Açıklamaları -->
-      <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium text-slate-600">
+      <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş (<b id="statEmpty">514</b>)</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block"></span> Seçili</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu (<b id="statFull">0</b>)</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-400 inline-block"></span> Protokol (<b id="statProto">0</b>)</span>
       </div>
     </div>
 
@@ -152,9 +170,44 @@
     </div>
   </div>
 
+  <!-- YÖNETİCİ KAYIT LİSTESİ MODALI -->
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white w-full max-w-4xl max-h-[88vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
+      <div class="p-3 bg-slate-900 text-white flex justify-between items-center text-xs">
+        <span class="font-bold">🛡️ Yönetici Paneli - Kayıtlı Katılımcı Listesi</span>
+        <button type="button" onclick="closeAdminModal()" class="px-2 py-1 hover:bg-slate-800 rounded font-bold">✕ Kapat</button>
+      </div>
+      <div class="p-2.5 bg-slate-50 border-b flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div class="flex items-center gap-2">
+          <span id="adminStatText" class="font-bold text-slate-700">0 Kayıt</span>
+          <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="İsim, PNR veya koltuk ara..." class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs bg-white">
+        </div>
+        <div class="flex gap-1.5">
+          <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 sm:p-3">
+        <table class="w-full text-left text-[11px] border-collapse">
+          <thead class="bg-slate-100 text-slate-600 sticky top-0">
+            <tr>
+              <th class="p-2">PNR</th>
+              <th class="p-2">Asıl Kayıt Sahibi</th>
+              <th class="p-2">Telefon & E-Posta</th>
+              <th class="p-2">Koltuklar</th>
+              <th class="p-2">Misafir Detayları</th>
+              <th class="p-2">Tarih</th>
+              <th class="p-2 text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="adminTbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Google Apps Script Web App URL'niz:
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJkf90NQ0LiqhI69DYBiI2sqliUO4_ztn0EZG__B5T8aqhHcv8ReXnBRyOjk5hJxMW/exec";
+    // Güncel Google Apps Script Web Uygulaması URL'niz:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwK82LAcotZO8xSOkqrO190q7mPlMwrN4nbU0tfNWrNYZ1mBDHyh1N4nC7j-cVdl0thNA/exec";
 
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
@@ -169,15 +222,25 @@
 
     let currentFloor = 'alt';
     let currentWing = 'all';
-    let fitMode = true; // Varsayılan olarak hem mobil hem masaüstünde ekrana tam sığdırır
+    let fitMode = true;
     let selectedSeats = [];
     let occupiedSeats = [];
+    let protocolSeats = [];
+    let adminRecords = [];
+    let isAdmin = false;
+    let secretTapCount = 0;
+    let secretTapTimer = null;
     let formDraft = {};
     let pendingPayload = null;
 
     function initApp() {
       renderGrid();
       fetchOccupiedSeats();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('yonetim') || params.has('admin')) {
+        setTimeout(() => promptAdminLogin(), 300);
+      }
     }
 
     async function fetchOccupiedSeats() {
@@ -185,8 +248,10 @@
       try {
         const response = await fetch(SCRIPT_URL + "?action=getOccupied");
         const data = await response.json();
-        if (data && data.occupied) {
-          occupiedSeats = data.occupied;
+        if (data) {
+          occupiedSeats = data.occupied || [];
+          protocolSeats = data.protocols || [];
+          if (data.records) adminRecords = data.records;
           refreshUI();
         }
       } catch (e) {
@@ -203,7 +268,6 @@
       const cfg = currentFloor === 'alt' ? altPlan : balkonPlan;
       const isFit = (currentWing === 'all' && fitMode);
 
-      // Büyütme modunda sol tarafın kesilmesini önlemek için w-max mx-auto kullanılır
       innerWrap.className = isFit
         ? 'w-full flex flex-col items-center'
         : 'w-max mx-auto flex flex-col items-center px-2';
@@ -238,7 +302,6 @@
           btn.type = 'button';
           btn.dataset.seatId = seatId;
 
-          // isFit aktifken shrink-0 ve sabit genişlik kaldırıldı, tüm koltuklar satıra %100 sığar
           btn.className = isFit
             ? 'seat flex-1 min-w-0 max-w-[28px] h-5 sm:h-7 rounded-[3px] sm:rounded-md text-[7px] sm:text-[10px] font-bold flex items-center justify-center border bg-emerald-500 text-white border-emerald-600'
             : 'seat w-7 h-7 sm:w-8 sm:h-8 rounded-md text-[10px] sm:text-xs font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
@@ -262,19 +325,32 @@
     function refreshUI() {
       document.querySelectorAll('.seat').forEach(btn => {
         const sId = btn.dataset.seatId;
-        btn.classList.remove('bg-emerald-500', 'border-emerald-600', 'bg-rose-600', 'border-rose-700', 'bg-indigo-600', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
+        btn.classList.remove(
+          'bg-emerald-500', 'border-emerald-600',
+          'bg-rose-600', 'border-rose-700',
+          'bg-amber-400', 'border-amber-500',
+          'bg-indigo-600', 'border-indigo-800',
+          'text-white', 'text-slate-950', 'ring-2', 'ring-indigo-300'
+        );
 
         if (selectedSeats.includes(sId)) {
           btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-800', 'ring-2', 'ring-indigo-300');
         } else if (occupiedSeats.includes(sId)) {
           btn.classList.add('bg-rose-600', 'text-white', 'border-rose-700');
+        } else if (protocolSeats.includes(sId)) {
+          btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-500');
         } else {
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
         }
       });
 
-      document.getElementById('statFull').innerText = occupiedSeats.length;
-      document.getElementById('statEmpty').innerText = Math.max(0, 514 - occupiedSeats.length);
+      const fullCount = occupiedSeats.length;
+      const protoCount = protocolSeats.length;
+      document.getElementById('statFull').innerText = fullCount;
+      document.getElementById('statProto').innerText = protoCount;
+      document.getElementById('statEmpty').innerText = Math.max(0, 514 - fullCount - protoCount);
+      document.getElementById('resCountBadge').innerText = adminRecords.length;
+
       updateForm();
     }
 
@@ -315,7 +391,31 @@
       if (em) formDraft._email = em.value;
     }
 
-    function onSeatClick(sId) {
+    async function onSeatClick(sId) {
+      if (isAdmin) {
+        if (occupiedSeats.includes(sId)) {
+          const rec = adminRecords.find(r => r.seats.includes(sId));
+          if (rec) {
+            const confirmDel = confirm(
+              `📌 DOLU KOLTUK BİLGİSİ (${sId})\n\n` +
+              `Kayıt Sahibi: ${rec.primaryName}\n` +
+              `Telefon: ${rec.phone}\n` +
+              `PNR: ${rec.pnr}\n\n` +
+              `Bu rezervasyonu İPTAL EDİP koltuğu boşaltmak ister misiniz?`
+            );
+            if (confirmDel) await deleteRes(rec.pnr);
+          }
+          return;
+        }
+        await toggleProtocolSeat(sId);
+        return;
+      }
+
+      if (protocolSeats.includes(sId)) {
+        alert("Bu koltuk protokol için ayrılmıştır, seçilemez.");
+        return;
+      }
+
       if (occupiedSeats.includes(sId)) {
         alert("Bu koltuk doludur.");
         return;
@@ -333,6 +433,147 @@
         selectedSeats.push(sId);
       }
       refreshUI();
+    }
+
+    function handleSecretTap() {
+      secretTapCount++;
+      clearTimeout(secretTapTimer);
+      if (secretTapCount >= 5) {
+        secretTapCount = 0;
+        promptAdminLogin();
+      } else {
+        secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 1500);
+      }
+    }
+
+    function promptAdminLogin() {
+      if (isAdmin) {
+        openAdminModal();
+        return;
+      }
+      const p = prompt("🔐 Yönetici Şifresini Giriniz:");
+      if (!p) return;
+
+      if (["baibu2026", "admin14", "mavisalon"].includes(p.trim())) {
+        isAdmin = true;
+        document.getElementById('adminBanner').classList.remove('hidden');
+        document.getElementById('adminBanner').classList.add('flex');
+        document.getElementById('adminListBtn').classList.remove('hidden');
+        document.getElementById('adminListBtn').classList.add('flex');
+        fetchOccupiedSeats();
+      } else {
+        alert("Yetkisiz erişim! Şifre hatalı.");
+      }
+    }
+
+    function exitAdmin() {
+      isAdmin = false;
+      document.getElementById('adminBanner').classList.add('hidden');
+      document.getElementById('adminBanner').classList.remove('flex');
+      document.getElementById('adminListBtn').classList.add('hidden');
+      document.getElementById('adminListBtn').classList.remove('flex');
+      closeAdminModal();
+      refreshUI();
+    }
+
+    async function toggleProtocolSeat(seatId) {
+      if (protocolSeats.includes(seatId)) {
+        protocolSeats = protocolSeats.filter(s => s !== seatId);
+      } else {
+        protocolSeats.push(seatId);
+      }
+      selectedSeats = selectedSeats.filter(s => s !== seatId);
+      refreshUI();
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'toggleProtocol', seatId: seatId })
+        });
+      } catch (e) {
+        console.warn("Protokol güncellenemedi:", e);
+      }
+    }
+
+    function openAdminModal() {
+      if (!isAdmin) return;
+      document.getElementById('adminModal').classList.remove('hidden');
+      renderAdminTable();
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function renderAdminTable() {
+      const tbody = document.getElementById('adminTbody');
+      const query = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
+      tbody.innerHTML = '';
+
+      const allList = [...adminRecords].reverse();
+      const filtered = allList.filter(r => {
+        if (!query) return true;
+        const hay = `${r.pnr} ${r.primaryName} ${r.phone} ${r.email} ${(r.seats || []).join(' ')} ${r.guestsText || ''}`.toLowerCase();
+        return hay.includes(query);
+      });
+
+      document.getElementById('adminStatText').innerText = `Toplam ${allList.length} Kayıt (${filtered.length} gösteriliyor)`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Kayıt bulunamadı.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-2 font-bold font-mono text-indigo-700">${r.pnr}</td>
+          <td class="p-2 font-bold text-slate-900">${r.primaryName}</td>
+          <td class="p-2 text-slate-600">${r.phone}<br><span class="text-[10px] text-slate-400">${r.email}</span></td>
+          <td class="p-2"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">${(r.seats || []).join(', ')}</span></td>
+          <td class="p-2 text-slate-600">${r.guestsText || '-'}</td>
+          <td class="p-2 text-[10px] text-slate-400">${r.date || '-'}</td>
+          <td class="p-2 text-right">
+            <button type="button" onclick="deleteRes('${r.pnr}')" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded font-bold">Sil</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function deleteRes(pnr) {
+      if (!isAdmin) return;
+      if (!confirm(`${pnr} kodlu rezervasyon silinsin ve koltuklar boşa çıkarılsın mı?`)) return;
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteReservation', pnr: pnr })
+        });
+        const result = await res.json();
+        if (result.success) {
+          await fetchOccupiedSeats();
+          renderAdminTable();
+        } else {
+          alert("Silinemedi: " + (result.message || ""));
+        }
+      } catch (e) {
+        alert("Silme işlemi sırasında hata oluştu.");
+      }
+    }
+
+    function exportCSV() {
+      if (!isAdmin) return;
+      let csv = "\uFEFFPNR;Kayıt Sahibi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Tarih\n";
+      adminRecords.forEach(r => {
+        csv += `"${r.pnr}";"${r.primaryName}";"${r.phone}";"${r.email}";"${(r.seats || []).join(', ')}";"${r.guestsText || ''}";"${r.date || ''}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `BAIBU_Mavi_Salon_Kayitlar.csv`;
+      a.click();
     }
 
     function updateForm() {
