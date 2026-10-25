@@ -54,10 +54,9 @@
   <div id="adminBanner" class="hidden bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold flex-wrap items-center justify-between gap-2 shadow-inner">
     <div class="flex items-center gap-2 flex-wrap">
       <span>⚙️ YÖNETİCİ MODU:</span>
-      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil/Sarı koltuğa tıklayarak Protokol yapabilirsiniz. Yöneticiyken cihaz kilidi devre dışıdır.</span>
+      <span class="bg-amber-950 text-amber-300 px-2 py-0.5 rounded text-[11px]">Yeşil/Sarı koltuğa tıklayarak Protokol yapabilirsiniz.</span>
     </div>
     <div class="flex items-center gap-1.5 ml-auto">
-      <button onclick="setMailScriptUrlPrompt()" class="bg-indigo-900 text-white px-2.5 py-1 rounded text-[11px]">✉️ Mail Sunucusu Ayarla</button>
       <button onclick="openAdminModal()" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px]">📋 Kayıt Listesi</button>
       <button onclick="exitAdmin()" class="bg-rose-700 text-white px-2.5 py-1 rounded text-[11px]">Çıkış</button>
     </div>
@@ -117,7 +116,7 @@
           <span id="seatBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0/4 Seçildi</span>
         </div>
 
-        <!-- Cihazdan Daha Önce Kayıt Yapıldıysa Gösterilecek Kilit Kutusu -->
+        <!-- Cihazdan Daha Önce Kayıt Yapıldıysa -->
         <div id="deviceLockedBox" class="hidden py-6 px-3 text-center bg-emerald-50 border border-emerald-200 rounded-xl my-3">
           <div class="text-2xl mb-1">✅</div>
           <h3 class="text-xs font-bold text-emerald-900">Bu Cihazdan Rezervasyon Yapılmıştır</h3>
@@ -129,36 +128,18 @@
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
         </div>
 
-        <form id="resForm" onsubmit="prepareReservation(event)" class="hidden space-y-3 mt-3">
+        <form id="resForm" onsubmit="submitReservationDirect(event)" class="hidden space-y-3 mt-3">
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
             <span>Rezervasyonu Tamamla</span>
           </button>
-          <p class="text-[10px] text-slate-400 text-center">Her katılımcı ve cihaz yalnızca tek rezervasyon yapabilir.</p>
+          <p class="text-[10px] text-slate-400 text-center">Her cihaz yalnızca tek bir rezervasyon oluşturabilir.</p>
         </form>
       </div>
     </div>
 
   </main>
-
-  <!-- OTP (E-Posta Doğrulama Kodu) Modalı -->
-  <div id="otpModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
-    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
-      <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 text-xl">✉️</div>
-      <h3 class="text-base font-bold text-slate-900">E-Posta Doğrulaması</h3>
-      <p class="text-xs text-slate-500 mt-0.5"><strong id="otpTargetEmail" class="text-indigo-600"></strong> adresine gönderilen 6 haneli doğrulama kodunu giriniz.</p>
-      
-      <div class="w-full my-4">
-        <input type="text" id="otpInputCode" maxlength="6" placeholder="Örn: 482910" class="w-full text-center tracking-widest text-lg font-mono p-3 rounded-xl border-2 border-indigo-300 bg-slate-50 focus:outline-none focus:border-indigo-600">
-      </div>
-
-      <div class="flex gap-2 w-full">
-        <button type="button" onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
-        <button type="button" id="otpVerifyBtn" onclick="verifyOtpAndSave()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">Onayla ve Bitir</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Bilet Onay Modalı -->
   <div id="ticketModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
@@ -214,9 +195,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // 1. SALON PLANI VE TEMEL DEĞİŞKENLER
-    // =========================================================================
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
       { r: 'E', n: 25 }, { r: 'F', n: 26 }, { r: 'G', n: 26 }, { r: 'H', n: 26 },
@@ -237,13 +215,8 @@
     let isAdmin = false;
     let formDraft = {};
 
-    let generatedOtp = "";
-    let pendingRecord = null;
     let secretTapCount = 0;
     let secretTapTimer = null;
-
-    // Google Apps Script Web App URL (Günlük 500 Ücretsiz Mail İçin)
-    let GOOGLE_SCRIPT_MAIL_URL = localStorage.getItem('baibu_gscript_url') || "";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDfZNZ8XB3yuaWMyOfiD6e_NSEbNrPnRpo",
@@ -259,9 +232,6 @@
     let db = null;
     let isFirebaseLive = false;
 
-    // =========================================================================
-    // 2. İLK ÇALIŞTIRMA
-    // =========================================================================
     function initApp() {
       renderGrid();
 
@@ -293,12 +263,6 @@
             localStorage.setItem('baibu_mavi_proto_v2', JSON.stringify(protocols));
             refreshUI();
           });
-          db.ref('config/gscript_url').on('value', snap => {
-            if (snap.exists() && snap.val()) {
-              GOOGLE_SCRIPT_MAIL_URL = snap.val();
-              localStorage.setItem('baibu_gscript_url', GOOGLE_SCRIPT_MAIL_URL);
-            }
-          });
         }
       } catch (e) {
         console.warn("Firebase bağlantı uyarısı:", e);
@@ -316,16 +280,12 @@
       initApp();
     }
 
-    // =========================================================================
-    // 3. CİHAZ KİLİDİ VE SAHTE VERİ (TELEFON / MAİL) DOĞRULAYICI
-    // =========================================================================
     function getDeviceLockedPnr() {
-      if (isAdmin) return null; // Yöneticiye cihaz kilidi uygulanmaz
+      if (isAdmin) return null;
       const myPnr = localStorage.getItem('baibu_device_pnr');
       if (myPnr && reservations && reservations[myPnr]) {
         return myPnr;
       }
-      // Eğer yönetici bu kaydı sildiyse cihaz kilidini de otomatik aç
       if (myPnr && reservations && Object.keys(reservations).length > 0 && !reservations[myPnr]) {
         localStorage.removeItem('baibu_device_pnr');
       }
@@ -333,7 +293,6 @@
     }
 
     function validateRealPhoneAndEmail(phone, email) {
-      // 1. Türkiye Cep Telefonu Format Kontrolü (05XX XXX XX XX veya 5XX XXX XX XX)
       let cleanPhone = phone.replace(/\D/g, '');
       if (cleanPhone.length === 10 && cleanPhone.startsWith('5')) {
         cleanPhone = '0' + cleanPhone;
@@ -343,13 +302,11 @@
         return { valid: false, msg: "Lütfen geçerli bir Türkiye cep telefonu numarası giriniz (Örn: 0532XXXXXXX)." };
       }
 
-      // Aynı rakamın 6 kez yan yana tekrar ettiği sallama numaraları engelle (Örn: 05321111111, 05555555555)
       const subscriberPart = cleanPhone.substring(4);
       if (/^(\d)\1{6}$/.test(subscriberPart) || subscriberPart === "1234567" || subscriberPart === "7654321") {
         return { valid: false, msg: "Girilen telefon numarası geçersiz veya rastgele tuşlanmış görünüyor!" };
       }
 
-      // 2. E-Posta Format ve Sahte Uzantı Kontrolü
       const emailParts = email.split('@');
       if (emailParts.length !== 2 || emailParts[0].length < 3) {
         return { valid: false, msg: "Lütfen geçerli bir e-posta adresi giriniz." };
@@ -357,7 +314,6 @@
       const localPart = emailParts[0];
       const domainPart = emailParts[1];
 
-      // Klavyede rastgele basılmış veya tek harf tekrarlı mailleri engelle
       if (/^(.)\1{3,}$/.test(localPart) || ["asdf", "qwer", "1234", "test", "deneme", "aaaa"].includes(localPart)) {
         return { valid: false, msg: "Lütfen gerçek ve aktif kullandığınız e-posta adresinizi giriniz." };
       }
@@ -370,9 +326,6 @@
       return { valid: true, cleanPhone: cleanPhone };
     }
 
-    // =========================================================================
-    // 4. KOLTUKLARI ÇİZME VE GÜNCELLEME
-    // =========================================================================
     function renderGrid() {
       const container = document.getElementById('seatContainer');
       if (!container) return;
@@ -512,9 +465,6 @@
       renderGrid();
     }
 
-    // =========================================================================
-    // 5. KOLTUK SEÇİMİ VE KAYIT İŞLEMLERİ
-    // =========================================================================
     function onSeatClick(sId) {
       const occupiedMap = getOccupiedSeatMap();
 
@@ -538,7 +488,6 @@
         return;
       }
 
-      // Cihaz kilidi kontrolü
       const lockedPnr = getDeviceLockedPnr();
       if (lockedPnr) {
         alert(`Bu cihazdan zaten bir rezervasyon yapılmıştır (PNR: ${lockedPnr}). Her katılımcı yalnızca tek bir kayıt oluşturabilir.`);
@@ -684,7 +633,7 @@
           html += `
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-indigo-100">
               <input type="tel" id="primary_phone" value="${formDraft._phone || ''}" required placeholder="Cep Tel (05XX...) *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
-              <input type="email" id="primary_email" value="${formDraft._email || ''}" required placeholder="Gerçek E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
+              <input type="email" id="primary_email" value="${formDraft._email || ''}" required placeholder="E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
             </div>
           `;
         }
@@ -694,7 +643,8 @@
       });
     }
 
-    async function prepareReservation(e) {
+    // DOĞRUDAN KAYIT (MAİL KODU BEKLEMEDEN ANINDA TAMamlama + SAHTE VERİ ENGELLEYİCİ)
+    async function submitReservationDirect(e) {
       e.preventDefault();
       if (selectedSeats.length === 0) return;
 
@@ -708,7 +658,7 @@
       const rawPhone = document.getElementById('primary_phone').value.trim();
       const email = document.getElementById('primary_email').value.trim().toLowerCase();
 
-      // Sahte Telefon ve Mail Kontrolü
+      // Sahte Numara ve Mail Kontrolü
       const checkValid = validateRealPhoneAndEmail(rawPhone, email);
       if (!checkValid.valid) {
         alert("⚠️ " + checkValid.msg);
@@ -718,14 +668,14 @@
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerText = "Kontrol Ediliyor...";
+      btn.innerText = "Kayıt Yapılıyor...";
 
       try {
         const takenSeats = await checkSeatConflictLive(selectedSeats);
         if (takenSeats.length > 0) {
           selectedSeats = selectedSeats.filter(s => !takenSeats.includes(s));
           refreshUI();
-          alert(`⚠️ Seçtiğiniz [${takenSeats.join(', ')}] numaralı koltuk(lar) az önce başka bir katılımcı tarafından alındı! Lütfen başka bir boş koltuk seçiniz.`);
+          alert(`⚠️ Seçtiğiniz [${takenSeats.join(', ')}] numaralı koltuk(lar) az önce başka biri tarafından alındı! Lütfen başka koltuk seçiniz.`);
           return;
         }
 
@@ -748,7 +698,7 @@
           });
         }
 
-        pendingRecord = {
+        const record = {
           pnr: pnr,
           primaryName: `${guests[0].name} ${guests[0].surname}`,
           phone: phone,
@@ -758,82 +708,28 @@
           date: new Date().toLocaleString('tr-TR')
         };
 
-        // Eğer Google Apps Script Mail URL ayarlanmamışsa doğrudan kaydet
-        if (!GOOGLE_SCRIPT_MAIL_URL) {
-          await finalizeReservation();
-          return;
-        }
+        const bookedSeats = [...selectedSeats];
+        saveReservationData(pnr, record);
 
-        generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        btn.innerText = "Doğrulama Kodu Gönderiliyor...";
+        document.getElementById('tPnr').innerText = pnr;
+        document.getElementById('tName').innerText = record.primaryName;
+        document.getElementById('tSeats').innerText = bookedSeats.join(', ');
+        document.getElementById('ticketModal').classList.remove('hidden');
 
-        await fetch(GOOGLE_SCRIPT_MAIL_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            email: email,
-            name: pendingRecord.primaryName,
-            otp: generatedOtp
-          })
-        });
-
-        document.getElementById('otpTargetEmail').innerText = email;
-        document.getElementById('otpModal').classList.remove('hidden');
+        selectedSeats = [];
+        formDraft = {};
+        refreshUI();
       } catch (err) {
-        console.error("Mail gönderim hatası:", err);
-        await finalizeReservation();
+        console.error("Kayıt hatası:", err);
+        alert("Kayıt sırasında bir hata oluştu.");
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>Rezervasyonu Tamamla</span>`;
       }
     }
 
-    async function verifyOtpAndSave() {
-      const userCode = document.getElementById('otpInputCode').value.trim();
-      if (userCode !== generatedOtp) {
-        alert("Hatalı doğrulama kodu! Lütfen e-postanıza gelen 6 haneli kodu doğru yazın.");
-        return;
-      }
-
-      const verifyBtn = document.getElementById('otpVerifyBtn');
-      verifyBtn.disabled = true;
-      verifyBtn.innerText = "Kaydediliyor...";
-
-      try {
-        document.getElementById('otpModal').classList.add('hidden');
-        document.getElementById('otpInputCode').value = "";
-        await finalizeReservation();
-      } finally {
-        verifyBtn.disabled = false;
-        verifyBtn.innerText = "Onayla ve Bitir";
-      }
-    }
-
-    async function finalizeReservation() {
-      if (!pendingRecord) return;
-
-      const takenSeats = await checkSeatConflictLive(pendingRecord.seats);
-      if (takenSeats.length > 0) {
-        selectedSeats = selectedSeats.filter(s => !takenSeats.includes(s));
-        pendingRecord = null;
-        refreshUI();
-        alert(`⚠️ ÜZGÜNÜZ: İşlem sırasında [${takenSeats.join(', ')}] numaralı koltuk başka bir kullanıcı tarafından alındı!`);
-        return;
-      }
-
-      const bookedSeats = [...pendingRecord.seats];
-      saveReservationData(pendingRecord.pnr, pendingRecord);
-
-      document.getElementById('tPnr').innerText = pendingRecord.pnr;
-      document.getElementById('tName').innerText = pendingRecord.primaryName;
-      document.getElementById('tSeats').innerText = bookedSeats.join(', ');
-      document.getElementById('ticketModal').classList.remove('hidden');
-
-      selectedSeats = [];
-      formDraft = {};
-      pendingRecord = null;
-      refreshUI();
+    function closeTicketModal() {
+      document.getElementById('ticketModal').classList.add('hidden');
     }
 
     function showMyLockedTicket() {
@@ -845,15 +741,6 @@
         document.getElementById('tSeats').innerText = (r.seats || []).join(', ');
         document.getElementById('ticketModal').classList.remove('hidden');
       }
-    }
-
-    function cancelOtp() {
-      document.getElementById('otpModal').classList.add('hidden');
-      pendingRecord = null;
-    }
-
-    function closeTicketModal() {
-      document.getElementById('ticketModal').classList.add('hidden');
     }
 
     function checkMyTicket() {
@@ -871,9 +758,6 @@
       document.getElementById('ticketModal').classList.remove('hidden');
     }
 
-    // =========================================================================
-    // 6. GİZLİ ADMİN GİRİŞİ VE YÖNETİM PANELİ
-    // =========================================================================
     function handleSecretTap() {
       secretTapCount++;
       clearTimeout(secretTapTimer);
@@ -904,16 +788,6 @@
         refreshUI();
       } else {
         alert("Yetkisiz erişim! Şifre hatalı.");
-      }
-    }
-
-    function setMailScriptUrlPrompt() {
-      const u = prompt("Günlük 500 ücretsiz mail için Google Apps Script Web App URL'nizi giriniz (Boş bırakırsanız doğrulamasız anında kayıt yapar):", GOOGLE_SCRIPT_MAIL_URL);
-      if (u !== null) {
-        GOOGLE_SCRIPT_MAIL_URL = u.trim();
-        localStorage.setItem('baibu_gscript_url', GOOGLE_SCRIPT_MAIL_URL);
-        if (isFirebaseLive && db) db.ref('config/gscript_url').set(GOOGLE_SCRIPT_MAIL_URL);
-        alert(GOOGLE_SCRIPT_MAIL_URL ? "Mail sunucusu aktif edildi!" : "Mail doğrulaması kapatıldı, doğrudan kayıt aktif.");
       }
     }
 
