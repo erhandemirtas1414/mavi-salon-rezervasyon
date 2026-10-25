@@ -4,13 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .seat { touch-action: manipulation; user-select: none; transition: transform 0.1s ease, background-color 0.15s ease; }
     .seat:active { transform: scale(0.85); }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
   </style>
 </head>
@@ -43,11 +42,13 @@
   </header>
 
   <!-- Ana İçerik -->
-  <main class="max-w-7xl mx-auto p-2 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <main class="max-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
     <!-- SOL: SALON PLANI -->
-    <div class="lg:col-span-8 bg-white p-2.5 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
-      <div class="w-full flex flex-col gap-2 mb-3">
+    <div class="lg:col-span-8 bg-white p-2 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
+      
+      <!-- Kat ve Blok Seçimi -->
+      <div class="w-full flex flex-col gap-2 mb-2">
         <div class="flex items-center justify-between gap-2 w-full">
           <div class="inline-flex p-1 bg-slate-100 rounded-xl flex-1 sm:flex-none">
             <button id="tabAlt" onclick="switchFloor('alt')" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow">Alt Kat (355)</button>
@@ -66,24 +67,27 @@
         </div>
       </div>
 
-      <!-- SAHNE -->
-      <div class="w-full max-w-md my-1.5 px-2 flex flex-col items-center">
-        <div class="w-full h-7 bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 rounded-t-2xl flex items-center justify-center text-white text-[11px] font-extrabold tracking-[0.25em] border-b-2 border-amber-400 shadow-sm">
-          SAHNE
+      <!-- SAHNE VE KOLTUK SARMALAYICI -->
+      <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1 flex flex-col items-center">
+        
+        <!-- SAHNE -->
+        <div id="stageWrapper" class="w-full max-w-md mb-2 px-1 flex flex-col items-center shrink-0">
+          <div class="w-full h-8 bg-gradient-to-r from-indigo-950 via-indigo-800 to-indigo-950 rounded-t-2xl flex items-center justify-center text-amber-400 text-xs sm:text-sm font-extrabold tracking-[0.35em] border-b-2 border-amber-400 shadow-md">
+            SAHNE
+          </div>
+          <div class="w-11/12 h-1.5 bg-amber-400/20 rounded-b-full mb-0.5"></div>
+          <span class="text-[10px] font-semibold text-slate-400">Ön Sıralar (A Sırası)</span>
         </div>
-        <span class="text-[10px] text-slate-400 mt-0.5">Ön Sıralar (A Sırası)</span>
-      </div>
 
-      <!-- KOLTUK DİZİLİM ALANI -->
-      <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1 flex justify-center">
-        <div id="seatContainer" class="flex flex-col gap-1 items-center w-full"></div>
+        <!-- KOLTUK DİZİLİM ALANI -->
+        <div id="seatContainer" class="flex flex-col gap-[3px] sm:gap-1 items-center w-full"></div>
       </div>
 
       <!-- Renk Açıklamaları -->
-      <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] font-medium text-slate-600">
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş</span>
+      <div class="w-full mt-2 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium text-slate-600">
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Boş (<b id="statEmpty">514</b>)</span>
         <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-indigo-600 inline-block"></span> Seçili</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-600 inline-block"></span> Dolu (<b id="statFull">0</b>)</span>
       </div>
     </div>
 
@@ -99,24 +103,43 @@
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
         </div>
 
-        <form id="resForm" onsubmit="submitReservation(event)" class="hidden space-y-3 mt-3">
+        <form id="resForm" onsubmit="requestVerificationCode(event)" class="hidden space-y-3 mt-3">
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
 
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <span>Rezervasyonu Tamamla</span>
+            <span>✉️ Doğrulama Kodu Gönder</span>
           </button>
+          <p class="text-[10px] text-slate-400 text-center">Rezervasyonu tamamlamak için e-postanıza 6 haneli onay kodu gönderilecektir.</p>
         </form>
       </div>
     </div>
 
   </main>
 
+  <!-- E-Posta Doğrulama (OTP) Modalı -->
+  <div id="otpModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
+      <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 text-xl">✉️</div>
+      <h3 class="text-base font-bold text-slate-900">E-Posta Doğrulama</h3>
+      <p class="text-xs text-slate-500 mt-1">
+        <strong id="otpEmailText" class="text-slate-800"></strong> adresine 6 haneli bir doğrulama kodu gönderdik.
+      </p>
+
+      <input type="text" id="otpInput" maxlength="6" inputmode="numeric" placeholder="______" class="w-44 text-center text-xl tracking-[0.4em] font-mono font-bold p-2.5 my-4 border-2 border-indigo-300 rounded-xl focus:outline-none focus:border-indigo-600">
+
+      <div class="flex gap-2 w-full">
+        <button type="button" onclick="closeOtpModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
+        <button type="button" id="verifyOtpBtn" onclick="confirmReservationWithOtp()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow">Onayla ve Bitir</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Bilet Onay Modalı -->
   <div id="ticketModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
       <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 text-xl">✅</div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">Kaydınız başarıyla tamamlandı.</p>
+      <p class="text-xs text-slate-500 mt-0.5">Bilet bilgileriniz e-posta adresinize de gönderilmiştir.</p>
       
       <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
@@ -129,8 +152,8 @@
   </div>
 
   <script>
-    // BURAYA Google Apps Script Web App URL'nizi yapıştırın:
-    const SCRIPT_URL = "BURAYA_GOOGLE_APPS_SCRIPT_WEB_APP_URL_YAZILACAK";
+    // Görseldeki Dağıtım Kimliğine göre ayarlanmış Google Apps Script Web App URL'si:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJkf90NQ0LiqhI69DYBiI2sqliUO4_ztn0EZG__B5T8aqhHcv8ReXnBRyOjk5hJxMW/exec";
 
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
@@ -147,7 +170,9 @@
     let currentWing = 'all';
     let mobileFitMode = true;
     let selectedSeats = [];
-    let occupiedSeats = []; // Apps Script'ten çekilecek dolu koltuklar listesi
+    let occupiedSeats = [];
+    let formDraft = {};
+    let pendingPayload = null;
 
     function initApp() {
       renderGrid();
@@ -155,6 +180,7 @@
     }
 
     async function fetchOccupiedSeats() {
+      if (!SCRIPT_URL) return;
       try {
         const response = await fetch(SCRIPT_URL + "?action=getOccupied");
         const data = await response.json();
@@ -169,20 +195,27 @@
 
     function renderGrid() {
       const container = document.getElementById('seatContainer');
+      const stageWrap = document.getElementById('stageWrapper');
       if (!container) return;
       container.innerHTML = '';
 
       const cfg = currentFloor === 'alt' ? altPlan : balkonPlan;
       const fitToMobile = (currentWing === 'all' && mobileFitMode);
 
+      stageWrap.className = fitToMobile
+        ? 'w-full max-w-md mb-2 px-1 flex flex-col items-center shrink-0'
+        : 'w-full min-w-[680px] max-w-xl mb-2 px-1 flex flex-col items-center shrink-0';
+
       cfg.forEach(row => {
         const rowWrap = document.createElement('div');
         rowWrap.className = fitToMobile
-          ? 'flex items-center justify-center gap-[2px] sm:gap-1 w-full'
-          : 'flex items-center justify-center gap-1 min-w-max px-1';
+          ? 'flex items-center justify-center gap-[1.5px] sm:gap-1 w-full px-0.5'
+          : 'flex items-center justify-center gap-1 min-w-max px-2';
 
         const lblL = document.createElement('div');
-        lblL.className = 'w-4 sm:w-6 text-center text-[8px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0';
+        lblL.className = fitToMobile
+          ? 'w-3.5 sm:w-6 text-center text-[7px] sm:text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0'
+          : 'w-6 text-center text-[10px] font-black text-indigo-950 bg-slate-200 rounded py-0.5 shrink-0';
         lblL.innerText = row.r;
         rowWrap.appendChild(lblL);
 
@@ -194,7 +227,7 @@
 
           if (currentWing === 'all' && i === mid + 1) {
             const aisle = document.createElement('div');
-            aisle.className = fitToMobile ? 'w-1.5 sm:w-4 shrink-0' : 'w-4 shrink-0';
+            aisle.className = fitToMobile ? 'w-1 sm:w-4 shrink-0' : 'w-4 shrink-0';
             rowWrap.appendChild(aisle);
           }
 
@@ -202,7 +235,11 @@
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.dataset.seatId = seatId;
-          btn.className = 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
+
+          btn.className = fitToMobile
+            ? 'seat flex-1 min-w-0 max-w-[26px] h-5 sm:w-7 sm:h-7 rounded-[3px] sm:rounded-md text-[7px] sm:text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600'
+            : 'seat w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center border shrink-0 bg-emerald-500 text-white border-emerald-600';
+
           btn.innerText = i;
           btn.onclick = () => onSeatClick(seatId);
           rowWrap.appendChild(btn);
@@ -232,10 +269,14 @@
           btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
         }
       });
+
+      document.getElementById('statFull').innerText = occupiedSeats.length;
+      document.getElementById('statEmpty').innerText = Math.max(0, 514 - occupiedSeats.length);
       updateForm();
     }
 
     function switchFloor(fl) {
+      saveCurrentFormDraft();
       currentFloor = fl;
       document.getElementById('tabAlt').className = fl === 'alt' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
       document.getElementById('tabBalkon').className = fl === 'balkon' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600';
@@ -243,6 +284,7 @@
     }
 
     function setWing(wing) {
+      saveCurrentFormDraft();
       currentWing = wing;
       ['all', 'left', 'right'].forEach(w => {
         const btn = document.getElementById('wing' + w.charAt(0).toUpperCase() + w.slice(1));
@@ -252,9 +294,22 @@
     }
 
     function toggleMobileZoom() {
+      saveCurrentFormDraft();
       mobileFitMode = !mobileFitMode;
       document.getElementById('zoomBtnText').innerText = mobileFitMode ? '🔍 Büyüt' : '📱 Ekrana Sığdır';
       renderGrid();
+    }
+
+    function saveCurrentFormDraft() {
+      selectedSeats.forEach((seat, idx) => {
+        const n = document.getElementById(`name_${idx}`);
+        const s = document.getElementById(`surname_${idx}`);
+        if (n && s) formDraft[seat] = { name: n.value, surname: s.value };
+      });
+      const ph = document.getElementById('primary_phone');
+      const em = document.getElementById('primary_email');
+      if (ph) formDraft._phone = ph.value;
+      if (em) formDraft._email = em.value;
     }
 
     function onSeatClick(sId) {
@@ -262,6 +317,8 @@
         alert("Bu koltuk doludur.");
         return;
       }
+
+      saveCurrentFormDraft();
 
       if (selectedSeats.includes(sId)) {
         selectedSeats = selectedSeats.filter(s => s !== sId);
@@ -295,6 +352,7 @@
 
       selectedSeats.forEach((seat, idx) => {
         const isLead = idx === 0;
+        const draft = formDraft[seat] || { name: '', surname: '' };
         const box = document.createElement('div');
         box.className = `p-2.5 rounded-xl border ${isLead ? 'bg-indigo-50/70 border-indigo-200' : 'bg-slate-50 border-slate-200'}`;
 
@@ -304,16 +362,16 @@
             <button type="button" onclick="onSeatClick('${seat}')" class="text-[10px] text-rose-600 hover:underline">Kaldır</button>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <div><input type="text" id="name_${idx}" required placeholder="Adınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
-            <div><input type="text" id="surname_${idx}" required placeholder="Soyadınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
+            <div><input type="text" id="name_${idx}" value="${draft.name}" required placeholder="Adınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
+            <div><input type="text" id="surname_${idx}" value="${draft.surname}" required placeholder="Soyadınız *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"></div>
           </div>
         `;
 
         if (isLead) {
           html += `
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-indigo-100">
-              <input type="tel" id="primary_phone" required placeholder="Cep Tel (05XX...) *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
-              <input type="email" id="primary_email" required placeholder="E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
+              <input type="tel" id="primary_phone" value="${formDraft._phone || ''}" required placeholder="Cep Tel (05XX...) *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
+              <input type="email" id="primary_email" value="${formDraft._email || ''}" required placeholder="E-Posta Adresi *" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white">
             </div>
           `;
         }
@@ -322,9 +380,11 @@
       });
     }
 
-    async function submitReservation(e) {
+    async function requestVerificationCode(e) {
       e.preventDefault();
       if (selectedSeats.length === 0) return;
+
+      saveCurrentFormDraft();
 
       const guests = selectedSeats.map((seat, i) => ({
         seat: seat,
@@ -332,42 +392,95 @@
         surname: document.getElementById(`surname_${i}`).value.trim()
       }));
 
-      const payload = {
+      const email = document.getElementById('primary_email').value.trim().toLowerCase();
+      const phone = document.getElementById('primary_phone').value.trim();
+
+      pendingPayload = {
         primaryName: `${guests[0].name} ${guests[0].surname}`,
-        phone: document.getElementById('primary_phone').value.trim(),
-        email: document.getElementById('primary_email').value.trim(),
-        seats: selectedSeats,
+        phone: phone,
+        email: email,
+        seats: [...selectedSeats],
         guests: guests
       };
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerText = "Kaydediliyor...";
+      btn.innerText = "Kod Gönderiliyor...";
 
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            action: 'sendCode',
+            email: email,
+            primaryName: pendingPayload.primaryName,
+            seats: pendingPayload.seats
+          })
         });
         const result = await response.json();
 
         if (result.success) {
+          document.getElementById('otpEmailText').innerText = email;
+          document.getElementById('otpInput').value = '';
+          document.getElementById('otpModal').classList.remove('hidden');
+        } else {
+          alert("Uyarı: " + (result.message || "Kod gönderilemedi."));
+          fetchOccupiedSeats();
+        }
+      } catch (err) {
+        alert("Sunucu bağlantısı kurulamadı. Lütfen dağıtım izinlerinin 'Herkes' (Anyone) olarak ayarlandığından emin olun.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "✉️ Doğrulama Kodu Gönder";
+      }
+    }
+
+    async function confirmReservationWithOtp() {
+      const code = document.getElementById('otpInput').value.trim();
+      if (code.length !== 6) {
+        alert("Lütfen e-postanıza gelen 6 haneli kodu eksiksiz giriniz.");
+        return;
+      }
+
+      const verifyBtn = document.getElementById('verifyOtpBtn');
+      verifyBtn.disabled = true;
+      verifyBtn.innerText = "Onaylanıyor...";
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'verifyAndBook',
+            code: code,
+            ...pendingPayload
+          })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          closeOtpModal();
           document.getElementById('tPnr').innerText = result.pnr;
-          document.getElementById('tName').innerText = payload.primaryName;
-          document.getElementById('tSeats').innerText = selectedSeats.join(', ');
+          document.getElementById('tName').innerText = pendingPayload.primaryName;
+          document.getElementById('tSeats').innerText = pendingPayload.seats.join(', ');
           document.getElementById('ticketModal').classList.remove('hidden');
 
           selectedSeats = [];
+          formDraft = {};
+          pendingPayload = null;
           fetchOccupiedSeats();
         } else {
-          alert("Hata: " + (result.message || "Kayıt yapılamadı."));
+          alert("Hata: " + (result.message || "Doğrulama başarısız oldu."));
         }
       } catch (err) {
-        alert("Bağlantı hatası oluştu.");
+        alert("Doğrulama sırasında bağlantı hatası oluştu.");
       } finally {
-        btn.disabled = false;
-        btn.innerText = "Rezervasyonu Tamamla";
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = "Onayla ve Bitir";
       }
+    }
+
+    function closeOtpModal() {
+      document.getElementById('otpModal').classList.add('hidden');
     }
 
     async function checkMyTicket() {
