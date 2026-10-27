@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -129,6 +129,7 @@
       <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 text-xl">✉️</div>
       <h3 class="text-base font-bold text-slate-900">E-Posta Doğrulama</h3>
       <p class="text-xs text-slate-500 mt-1"><strong id="otpEmailText" class="text-slate-800"></strong> adresine 6 haneli bir doğrulama kodu gönderdik.</p>
+      <p class="text-[11px] text-amber-600 mt-1">Kod gelmediyse Spam / Gereksiz klasörünü de kontrol edin.</p>
       <input type="text" id="otpInput" maxlength="6" inputmode="numeric" placeholder="______" class="w-44 text-center text-xl tracking-[0.4em] font-mono font-bold p-2.5 my-4 border-2 border-indigo-300 rounded-xl focus:outline-none focus:border-indigo-600">
       <div class="flex gap-2 w-full">
         <button type="button" onclick="cancelOtp()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">İptal</button>
@@ -200,6 +201,7 @@
     let isAdmin = false, adminKey = '';
     let secretTapCount = 0, secretTapTimer = null;
     let formDraft = {}, pendingPayload = null;
+    let seatsLoaded = false;
 
     // Kullanıcı verisini HTML'e güvenle basmak için
     function esc(s) {
@@ -209,6 +211,12 @@
     function initApp() {
       renderGrid();
       fetchOccupiedSeats();
+      setInterval(() => {
+    if (document.hidden) return;
+    const a = document.activeElement;
+    if (a && a.tagName === 'INPUT') return;
+    fetchOccupiedSeats();
+  }, 30000);
       const params = new URLSearchParams(window.location.search);
       if (params.has('yonetim') || params.has('admin')) {
         setTimeout(() => promptAdminLogin(), 300);
@@ -226,6 +234,7 @@
           occupiedSeats = data.occupied || [];
           protocolSeats = data.protocols || [];
           if (data.records) adminRecords = data.records;
+          seatsLoaded = true;
           refreshUI();
         }
       } catch (e) {
@@ -372,7 +381,7 @@
         await toggleProtocolSeat(sId);
         return;
       }
-
+      if (!seatsLoaded) { alert("Koltuk durumları yükleniyor, lütfen birkaç saniye bekleyin."); return; }
       if (protocolSeats.includes(sId)) { alert("Bu koltuk protokol için ayrılmıştır, seçilemez."); return; }
       if (occupiedSeats.includes(sId)) { alert("Bu koltuk doludur."); return; }
 
