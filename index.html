@@ -165,6 +165,7 @@
           <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="İsim, PNR veya koltuk ara..." class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs bg-white">
         </div>
         <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
+                <button type="button" onclick="deleteAllRecords()" class="bg-rose-700 hover:bg-rose-800 text-white px-3 py-1.5 rounded-lg font-bold">🗑️ Tümünü Sil</button>
       </div>
       <div class="flex-1 overflow-y-auto p-2 sm:p-3">
         <table class="w-full text-left text-[11px] border-collapse">
@@ -530,7 +531,39 @@
         alert("Silme işlemi sırasında hata oluştu.");
       }
     }
+        async function deleteAllRecords() {
+      if (!isAdmin) return;
+      if (adminRecords.length === 0) { alert("Silinecek kayıt yok."); return; }
 
+      const typed = prompt(
+        `⚠️ ${adminRecords.length} rezervasyonun TÜMÜ silinecek ve koltuklar boşalacak.\n\n` +
+        `İşlemden önce e-tabloda otomatik yedek sayfası oluşturulur.\n\n` +
+        `Onaylamak için büyük harfle şunu yazın: SIL`
+      );
+      if (typed === null) return;
+      if (typed.trim().toLocaleUpperCase('en-US') !== 'SIL') {
+        alert("Onay metni eşleşmedi. İşlem iptal edildi.");
+        return;
+      }
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteAll', adminKey: adminKey, confirmText: 'SIL' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          adminRecords = [];
+          await fetchOccupiedSeats();
+          renderAdminTable();
+          alert(`${result.deleted} kayıt silindi.\nYedek sayfa: "${result.backup}"`);
+        } else {
+          alert("Silinemedi: " + (result.message || ""));
+        }
+      } catch (e) {
+        alert("Silme sırasında hata oluştu.");
+      }
+    }
     function csvCell(v) {
       let s = String(v ?? '').replace(/"/g, '""');
       if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
