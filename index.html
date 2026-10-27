@@ -106,6 +106,14 @@
         </div>
         <form id="resForm" onsubmit="requestVerificationCode(event)" class="hidden space-y-3 mt-3">
           <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
+          <label class="flex items-start gap-2 text-[11px] text-slate-600 leading-snug cursor-pointer">
+            <input type="checkbox" id="kvkkConsent" required class="mt-0.5 shrink-0">
+            <span>Ad, soyad, telefon ve e-posta bilgilerimin yalnızca bu etkinliğin rezervasyon ve bilgilendirme işlemleri için işlenmesini kabul ediyorum.</span>
+          </label>
+          <details class="text-[10px] text-slate-500">
+            <summary class="cursor-pointer font-semibold">KVKK Aydınlatma Metni</summary>
+            <p class="mt-1 leading-snug">Bu formda paylaştığınız kişisel veriler (ad, soyad, telefon, e-posta ve seçtiğiniz koltuklar), 6698 sayılı KVKK kapsamında yalnızca koltuk rezervasyonu, doğrulama ve etkinlikle ilgili bilgilendirme amacıyla işlenir. Veriler üçüncü kişilerle paylaşılmaz ve etkinlik sonrasında kurumun saklama politikasına göre silinir. Haklarınız için etkinlik organizatörüyle iletişime geçebilirsiniz.</p>
+          </details>
           <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
             <span>✉️ Doğrulama Kodu Gönder</span>
           </button>
@@ -523,11 +531,17 @@
       }
     }
 
+    function csvCell(v) {
+      let s = String(v ?? '').replace(/"/g, '""');
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return `"${s}"`;
+    }
+
     function exportCSV() {
       if (!isAdmin) return;
       let csv = "\uFEFFPNR;Kayıt Sahibi;Telefon;E-Posta;Koltuklar;Misafir Detayları;Tarih\n";
       adminRecords.forEach(r => {
-        csv += `"${r.pnr}";"${r.primaryName}";"${r.phone}";"${r.email}";"${(r.seats || []).join(', ')}";"${r.guestsText || ''}";"${r.date || ''}"\n`;
+        csv += [r.pnr, r.primaryName, r.phone, r.email, (r.seats || []).join(', '), r.guestsText, r.date].map(csvCell).join(';') + "\n";
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -598,7 +612,9 @@
         phone: phone,
         email: email,
         seats: [...selectedSeats],
-        guests: guests
+        guests: guests,
+        consent: document.getElementById('kvkkConsent').checked,
+        token: ''
       };
 
       const btn = document.getElementById('submitBtn');
@@ -608,11 +624,12 @@
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'sendCode', email: email, phone: phone, primaryName: pendingPayload.primaryName, seats: pendingPayload.seats })
+          body: JSON.stringify({ action: 'sendCode', email: email, phone: phone, primaryName: pendingPayload.primaryName, seats: pendingPayload.seats, guests: guests, consent: pendingPayload.consent })
         });
         const result = await response.json();
 
         if (result.success) {
+          pendingPayload.token = result.token || '';
           document.getElementById('otpEmailText').innerText = email;
           document.getElementById('otpInput').value = '';
           document.getElementById('otpModal').classList.remove('hidden');
@@ -675,7 +692,7 @@
         try {
           await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'releaseHold', email: pendingPayload.email })
+            body: JSON.stringify({ action: 'releaseHold', email: pendingPayload.email, token: pendingPayload.token })
           });
         } catch (e) { console.warn(e); }
         fetchOccupiedSeats();
@@ -694,7 +711,7 @@
           document.getElementById('tSeats').innerText = data.seats.join(', ');
           document.getElementById('ticketModal').classList.remove('hidden');
         } else {
-          alert("Bu PNR koduna ait kayıt bulunamadı.");
+          alert(data.message || "Bu PNR koduna ait kayıt bulunamadı.");
         }
       } catch (e) {
         alert("Sorgulama yapılırken hata oluştu.");
