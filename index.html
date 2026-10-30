@@ -838,6 +838,13 @@
     } else {
       initApp();
     }
+    function yetkiVer() {
+  var r = UrlFetchApp.fetch("https://api.brevo.com/v3/account", {
+    headers: { "api-key": PropertiesService.getScriptProperties().getProperty("BREVO_API_KEY") || "yok", "accept": "application/json" },
+    muteHttpExceptions: true
+  });
+  Logger.log("Brevo yanıt kodu: " + r.getResponseCode() + "  (200 ise anahtar ve izin tamam)");
+}
   </script>
 </body>
 </html>
