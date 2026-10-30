@@ -764,9 +764,21 @@
       }
     }
         async function downloadTicketPdf() {
-      const el = document.getElementById('ticketCard');
+      const src = document.getElementById('ticketCard');
+      const clone = src.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.style.cssText = 'position:fixed;left:0;top:0;width:380px;box-sizing:border-box;padding:16px;background:#ffffff;z-index:-1;';
+      document.body.appendChild(clone);
       try {
-        const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' });
+        const canvas = await html2canvas(clone, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          width: 380,
+          height: clone.offsetHeight,
+          windowWidth: document.documentElement.clientWidth
+        });
         const img = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
         const w = 100;
@@ -776,7 +788,10 @@
         pdf.save('Bilet_' + document.getElementById('tPnr').innerText + '.pdf');
       } catch (e) {
         alert("PDF oluşturulamadı. Ekran görüntüsü almanızı öneririz.");
+      } finally {
+        clone.remove();
       }
+    }
     }
     function closeTicketModal() {
       document.getElementById('ticketModal').classList.add('hidden');
