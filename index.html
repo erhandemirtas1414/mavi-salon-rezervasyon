@@ -54,7 +54,7 @@
     </div>
   </div>
 
-  <main class="max-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <main class="-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
     <div class="lg:col-span-8 bg-white p-2 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
 
@@ -78,7 +78,7 @@
 
       <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1">
         <div id="seatInnerWrap" class="w-full flex flex-col items-center">
-          <div id="stageWrapper" class="w-full max-w-md mb-2 px-1 flex flex-col items-center">
+          <div id="stageWrapper" class="w-full -w-md mb-2 px-1 flex flex-col items-center">
             <div class="w-full h-8 bg-gradient-to-r from-indigo-950 via-indigo-800 to-indigo-950 rounded-t-2xl flex items-center justify-center text-amber-400 text-xs sm:text-sm font-extrabold tracking-[0.35em] border-b-2 border-amber-400 shadow-md">SAHNE</div>
             <div class="w-11/12 h-1.5 bg-amber-400/20 rounded-b-full mb-0.5"></div>
             <span class="text-[10px] font-semibold text-slate-400">Ön Sıralar (A Sırası)</span>
@@ -99,13 +99,13 @@
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
           <h2 class="text-sm font-bold text-slate-900">🎟️ Rezervasyon Formu</h2>
-          <span id="seatBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0/4 Seçildi</span>
+          <span id="seatBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">0/2 Seçildi</span>
         </div>
         <div id="emptyHint" class="py-10 text-center text-slate-400 text-xs">
-          Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>4 adet</strong> seçiniz.
+          Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>2 adet</strong> seçiniz.
         </div>
         <form id="resForm" onsubmit="requestVerificationCode(event)" class="hidden space-y-3 mt-3">
-          <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
+          <div id="formFields" class="space-y-2.5 -h-[55vh] overflow-y-auto pr-1"></div>
           <label class="flex items-start gap-2 text-[11px] text-slate-600 leading-snug cursor-pointer">
             <input type="checkbox" id="kvkkConsent" required class="mt-0.5 shrink-0">
             <span>Ad, soyad, telefon ve e-posta bilgilerimin yalnızca bu etkinliğin rezervasyon ve bilgilendirme işlemleri için işlenmesini kabul ediyorum.</span>
@@ -390,7 +390,7 @@
       if (selectedSeats.includes(sId)) {
         selectedSeats = selectedSeats.filter(s => s !== sId);
       } else {
-        if (selectedSeats.length >= 4) { alert("Tek seferde en fazla 4 koltuk seçebilirsiniz."); return; }
+        if (selectedSeats.length >= 2) { alert("Tek seferde en fazla 2 koltuk seçebilirsiniz."); return; }
         selectedSeats.push(sId);
       }
       refreshUI();
@@ -596,7 +596,7 @@
       const form = document.getElementById('resForm');
       const hint = document.getElementById('emptyHint');
       const container = document.getElementById('formFields');
-      document.getElementById('seatBadge').innerText = `${selectedSeats.length}/4 Seçildi`;
+      document.getElementById('seatBadge').innerText = `${selectedSeats.length}/2 Seçildi`;
 
       if (selectedSeats.length === 0) {
         form.classList.add('hidden');
