@@ -766,31 +766,66 @@
       }
     }
 
-    // PDF bilet: bilet kutusunu ekran dışında sabit genişlikli bir kopyaya çevirip görüntüsünü alır
-    async function downloadTicketPdf() {
-      const src = document.getElementById('ticketCard');
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:400px;padding:16px;background:#ffffff;';
-      const clone = src.cloneNode(true);
-      clone.removeAttribute('id');
-      clone.style.width = '100%';
-      clone.style.margin = '0';
-      wrap.appendChild(clone);
-      document.body.appendChild(wrap);
+    // PDF bilet: bileti doğrudan tuvale çizer (ekran genişliğinden etkilenmez)
+    function downloadTicketPdf() {
       try {
-        const canvas = await html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff' });
+        const pnr = document.getElementById('tPnr').innerText;
+        const name = document.getElementById('tName').innerText;
+        const seats = document.getElementById('tSeats').innerText;
+
+        const W = 900, H = 480;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.strokeStyle = '#818cf8';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 10]);
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+        ctx.setLineDash([]);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#1e1b4b';
+        ctx.font = 'bold 38px Arial, Helvetica, sans-serif';
+        ctx.fillText('BAİBÜ İzzet Baysal KM - Mavi Salon', W / 2, 90);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '26px Arial, Helvetica, sans-serif';
+        ctx.fillText('Etkinlik Bileti', W / 2, 135);
+
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(60, 165); ctx.lineTo(W - 60, 165); ctx.stroke();
+
+        ctx.textAlign = 'left';
+        const rows = [
+          ['PNR Kodu:', pnr, '#4338ca', 'bold 40px Courier New, monospace'],
+          ['Kayıt Sahibi:', name, '#0f172a', 'bold 34px Arial, Helvetica, sans-serif'],
+          ['Koltuklar:', seats, '#e11d48', 'bold 36px Arial, Helvetica, sans-serif']
+        ];
+        let y = 235;
+        rows.forEach(r => {
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '28px Arial, Helvetica, sans-serif';
+          ctx.fillText(r[0], 60, y);
+          ctx.fillStyle = r[2];
+          ctx.font = r[3];
+          ctx.fillText(r[1], 300, y);
+          y += 80;
+        });
+
         const img = canvas.toDataURL('image/png');
         const jsPDF = window.jspdf.jsPDF;
-        const w = 100;
-        const h = (canvas.height * w) / canvas.width;
+        const w = 120;
+        const h = (H * w) / W;
         const pdf = new jsPDF({ unit: 'mm', format: [w + 20, h + 20] });
         pdf.addImage(img, 'PNG', 10, 10, w, h);
-        pdf.save('Bilet_' + document.getElementById('tPnr').innerText + '.pdf');
+        pdf.save('Bilet_' + pnr + '.pdf');
       } catch (e) {
         console.error(e);
         alert("PDF oluşturulamadı. Ekran görüntüsü almanızı öneririz.");
-      } finally {
-        wrap.remove();
       }
     }
 
