@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .seat { touch-action: manipulation; user-select: none; transition: transform 0.1s ease, background-color 0.15s ease; }
@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <main class="-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <main class="max-w-7xl mx-auto p-1.5 sm:p-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
     <div class="lg:col-span-8 bg-white p-2 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center w-full overflow-hidden">
 
@@ -80,7 +80,7 @@
 
       <div id="seatScrollWrapper" class="w-full overflow-x-auto pb-2 pt-1">
         <div id="seatInnerWrap" class="w-full flex flex-col items-center">
-          <div id="stageWrapper" class="w-full -w-md mb-2 px-1 flex flex-col items-center">
+          <div id="stageWrapper" class="w-full max-w-md mb-2 px-1 flex flex-col items-center">
             <div class="w-full h-8 bg-gradient-to-r from-indigo-950 via-indigo-800 to-indigo-950 rounded-t-2xl flex items-center justify-center text-amber-400 text-xs sm:text-sm font-extrabold tracking-[0.35em] border-b-2 border-amber-400 shadow-md">SAHNE</div>
             <div class="w-11/12 h-1.5 bg-amber-400/20 rounded-b-full mb-0.5"></div>
             <span class="text-[10px] font-semibold text-slate-400">Ön Sıralar (A Sırası)</span>
@@ -107,7 +107,7 @@
           Lütfen salondan yeşil renkli boş koltuklardan<br>en fazla <strong>2 adet</strong> seçiniz.
         </div>
         <form id="resForm" onsubmit="requestVerificationCode(event)" class="hidden space-y-3 mt-3">
-          <div id="formFields" class="space-y-2.5 -h-[55vh] overflow-y-auto pr-1"></div>
+          <div id="formFields" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1"></div>
           <label class="flex items-start gap-2 text-[11px] text-slate-600 leading-snug cursor-pointer">
             <input type="checkbox" id="kvkkConsent" required class="mt-0.5 shrink-0">
             <span>Ad, soyad, telefon ve e-posta bilgilerimin yalnızca bu etkinliğin rezervasyon ve bilgilendirme işlemleri için işlenmesini kabul ediyorum.</span>
@@ -145,15 +145,15 @@
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
       <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 text-xl">✅</div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-       <p class="text-xs text-slate-500 mt-0.5">Biletinizi PDF olarak indirin ve PNR kodunuzu not alın.</p>
-        <div id="ticketCard" class="w-full bg-white border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
+      <p class="text-xs text-slate-500 mt-0.5">Biletinizi PDF olarak indirin ve PNR kodunuzu not alın.</p>
+      <div id="ticketCard" class="w-full bg-white border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
         <div class="text-center font-bold text-indigo-950 text-sm pb-1 border-b border-slate-200">BAİBÜ İzzet Baysal KM - Mavi Salon<br><span class="text-[10px] font-medium text-slate-500">Etkinlik Bileti</span></div>
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
         <div><span class="text-slate-400">Kayıt Sahibi:</span> <strong id="tName"></strong></div>
         <div><span class="text-slate-400">Koltuklar:</span> <strong id="tSeats" class="text-rose-600 font-extrabold"></strong></div>
       </div>
-            <button type="button" onclick="downloadTicketPdf()" class="w-full py-2.5 mb-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">📄 Bileti PDF İndir</button>
-            <button type="button" onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
+      <button type="button" onclick="downloadTicketPdf()" class="w-full py-2.5 mb-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">📄 Bileti PDF İndir</button>
+      <button type="button" onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
     </div>
   </div>
 
@@ -169,8 +169,10 @@
           <span id="adminStatText" class="font-bold text-slate-700">0 Kayıt</span>
           <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="İsim, PNR veya koltuk ara..." class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs bg-white">
         </div>
-        <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
-                <button type="button" onclick="deleteAllRecords()" class="bg-rose-700 hover:bg-rose-800 text-white px-3 py-1.5 rounded-lg font-bold">🗑️ Tümünü Sil</button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">📥 Excel (CSV) İndir</button>
+          <button type="button" onclick="deleteAllRecords()" class="bg-rose-700 hover:bg-rose-800 text-white px-3 py-1.5 rounded-lg font-bold">🗑️ Tümünü Sil</button>
+        </div>
       </div>
       <div class="flex-1 overflow-y-auto p-2 sm:p-3">
         <table class="w-full text-left text-[11px] border-collapse">
@@ -188,6 +190,7 @@
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJkf90NQ0LiqhI69DYBiI2sqliUO4_ztn0EZG__B5T8aqhHcv8ReXnBRyOjk5hJxMW/exec";
+    const MAX_SEATS = 2;
 
     const altPlan = [
       { r: 'A', n: 23 }, { r: 'B', n: 23 }, { r: 'C', n: 25 }, { r: 'D', n: 25 },
@@ -207,7 +210,6 @@
     let formDraft = {}, pendingPayload = null;
     let seatsLoaded = false;
 
-    // Kullanıcı verisini HTML'e güvenle basmak için
     function esc(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
@@ -216,11 +218,11 @@
       renderGrid();
       fetchOccupiedSeats();
       setInterval(() => {
-    if (document.hidden) return;
-    const a = document.activeElement;
-    if (a && a.tagName === 'INPUT') return;
-    fetchOccupiedSeats();
-  }, 30000);
+        if (document.hidden) return;
+        const a = document.activeElement;
+        if (a && a.tagName === 'INPUT') return;
+        fetchOccupiedSeats();
+      }, 30000);
       const params = new URLSearchParams(window.location.search);
       if (params.has('yonetim') || params.has('admin')) {
         setTimeout(() => promptAdminLogin(), 300);
@@ -394,7 +396,7 @@
       if (selectedSeats.includes(sId)) {
         selectedSeats = selectedSeats.filter(s => s !== sId);
       } else {
-        if (selectedSeats.length >= 2) { alert("Tek seferde en fazla 2 koltuk seçebilirsiniz."); return; }
+        if (selectedSeats.length >= MAX_SEATS) { alert("Tek seferde en fazla " + MAX_SEATS + " koltuk seçebilirsiniz."); return; }
         selectedSeats.push(sId);
       }
       refreshUI();
@@ -411,7 +413,6 @@
       }
     }
 
-    // Parola SUNUCUDA doğrulanır (HTML içinde parola yok)
     async function promptAdminLogin() {
       if (isAdmin) { openAdminModal(); return; }
       const p = prompt("🔐 Yönetici Şifresini Giriniz:");
@@ -544,7 +545,8 @@
         alert("Silme işlemi sırasında hata oluştu.");
       }
     }
-        async function deleteAllRecords() {
+
+    async function deleteAllRecords() {
       if (!isAdmin) return;
       if (adminRecords.length === 0) { alert("Silinecek kayıt yok."); return; }
 
@@ -577,6 +579,7 @@
         alert("Silme sırasında hata oluştu.");
       }
     }
+
     function csvCell(v) {
       let s = String(v ?? '').replace(/"/g, '""');
       if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
@@ -600,7 +603,7 @@
       const form = document.getElementById('resForm');
       const hint = document.getElementById('emptyHint');
       const container = document.getElementById('formFields');
-      document.getElementById('seatBadge').innerText = `${selectedSeats.length}/2 Seçildi`;
+      document.getElementById('seatBadge').innerText = `${selectedSeats.length}/${MAX_SEATS} Seçildi`;
 
       if (selectedSeats.length === 0) {
         form.classList.add('hidden');
@@ -731,7 +734,6 @@
       document.getElementById('otpModal').classList.add('hidden');
     }
 
-    // İptal edilince geçici koltuk kilidini sunucuda da aç
     async function cancelOtp() {
       closeOtpModal();
       if (pendingPayload && pendingPayload.email) {
@@ -763,36 +765,35 @@
         alert("Sorgulama yapılırken hata oluştu.");
       }
     }
-        async function downloadTicketPdf() {
+
+    // PDF bilet: bilet kutusunu ekran dışında sabit genişlikli bir kopyaya çevirip görüntüsünü alır
+    async function downloadTicketPdf() {
       const src = document.getElementById('ticketCard');
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:400px;padding:16px;background:#ffffff;';
       const clone = src.cloneNode(true);
       clone.removeAttribute('id');
-      clone.style.cssText = 'position:fixed;left:0;top:0;width:380px;box-sizing:border-box;padding:16px;background:#ffffff;z-index:-1;';
-      document.body.appendChild(clone);
+      clone.style.width = '100%';
+      clone.style.margin = '0';
+      wrap.appendChild(clone);
+      document.body.appendChild(wrap);
       try {
-        const canvas = await html2canvas(clone, {
-          scale: 2,
-          backgroundColor: '#ffffff',
-          scrollX: 0,
-          scrollY: 0,
-          width: 380,
-          height: clone.offsetHeight,
-          windowWidth: document.documentElement.clientWidth
-        });
+        const canvas = await html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff' });
         const img = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
+        const jsPDF = window.jspdf.jsPDF;
         const w = 100;
         const h = (canvas.height * w) / canvas.width;
         const pdf = new jsPDF({ unit: 'mm', format: [w + 20, h + 20] });
         pdf.addImage(img, 'PNG', 10, 10, w, h);
         pdf.save('Bilet_' + document.getElementById('tPnr').innerText + '.pdf');
       } catch (e) {
+        console.error(e);
         alert("PDF oluşturulamadı. Ekran görüntüsü almanızı öneririz.");
       } finally {
-        clone.remove();
+        wrap.remove();
       }
     }
-    }
+
     function closeTicketModal() {
       document.getElementById('ticketModal').classList.add('hidden');
     }
