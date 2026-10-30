@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BAİBÜ Mavi Salon - Rezervasyon Sistemi</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
@@ -143,13 +145,15 @@
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center flex flex-col items-center">
       <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 text-xl">✅</div>
       <h3 class="text-base font-bold text-slate-900">Koltuklarınız Ayrıldı!</h3>
-      <p class="text-xs text-slate-500 mt-0.5">Bilet bilgileriniz e-posta adresinize de gönderilmiştir.</p>
-      <div class="w-full bg-slate-50 border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
+       <p class="text-xs text-slate-500 mt-0.5">Biletinizi PDF olarak indirin ve PNR kodunuzu not alın.</p>
+        <div id="ticketCard" class="w-full bg-white border border-dashed border-indigo-300 rounded-xl p-3 my-3 text-left space-y-1.5 text-xs">
+        <div class="text-center font-bold text-indigo-950 text-sm pb-1 border-b border-slate-200">BAİBÜ İzzet Baysal KM - Mavi Salon<br><span class="text-[10px] font-medium text-slate-500">Etkinlik Bileti</span></div>
         <div><span class="text-slate-400">PNR Kodu:</span> <strong id="tPnr" class="font-mono text-indigo-700 text-sm"></strong></div>
         <div><span class="text-slate-400">Kayıt Sahibi:</span> <strong id="tName"></strong></div>
         <div><span class="text-slate-400">Koltuklar:</span> <strong id="tSeats" class="text-rose-600 font-extrabold"></strong></div>
       </div>
-      <button type="button" onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
+            <button type="button" onclick="downloadTicketPdf()" class="w-full py-2.5 mb-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">📄 Bileti PDF İndir</button>
+            <button type="button" onclick="closeTicketModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Tamam</button>
     </div>
   </div>
 
@@ -759,7 +763,21 @@
         alert("Sorgulama yapılırken hata oluştu.");
       }
     }
-
+        async function downloadTicketPdf() {
+      const el = document.getElementById('ticketCard');
+      try {
+        const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' });
+        const img = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const w = 100;
+        const h = (canvas.height * w) / canvas.width;
+        const pdf = new jsPDF({ unit: 'mm', format: [w + 20, h + 20] });
+        pdf.addImage(img, 'PNG', 10, 10, w, h);
+        pdf.save('Bilet_' + document.getElementById('tPnr').innerText + '.pdf');
+      } catch (e) {
+        alert("PDF oluşturulamadı. Ekran görüntüsü almanızı öneririz.");
+      }
+    }
     function closeTicketModal() {
       document.getElementById('ticketModal').classList.add('hidden');
     }
