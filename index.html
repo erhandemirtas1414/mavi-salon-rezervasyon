@@ -29,7 +29,7 @@
         </div>
         <div class="truncate">
           <h1 class="text-xs sm:text-base font-bold leading-tight truncate">İzzet Baysal KM - Mavi Salon</h1>
-          <p class="text-[10px] text-indigo-200 truncate">514 Koltuk (355 Alt Kat • 159 Balkon) • sürüm: PDF-v3</p>
+          <p class="text-[10px] text-indigo-200 truncate">514 Koltuk (355 Alt Kat • 159 Balkon) • sürüm: PDF-v4</p>
         </div>
       </div>
 
@@ -818,10 +818,10 @@
 
         const img = canvas.toDataURL('image/png');
         const jsPDF = window.jspdf.jsPDF;
-        const w = 120;
+        const w = 170;
         const h = (H * w) / W;
-        const pdf = new jsPDF({ unit: 'mm', format: [w + 20, h + 20] });
-        pdf.addImage(img, 'PNG', 10, 10, w, h);
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        pdf.addImage(img, 'PNG', (210 - w) / 2, 20, w, h);
         pdf.save('Bilet_' + pnr + '.pdf');
       } catch (e) {
         console.error(e);
